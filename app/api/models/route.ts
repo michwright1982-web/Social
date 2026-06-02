@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     if (provider === 'OpenAI') {
       try {
         const res = await fetch('https://api.openai.com/v1/models', {
-          headers: { 'Authorization': `Bearer ${keyEntry.key}` }
+          headers: { 'Authorization': `Bearer ${keyEntry.key.trim()}` }
         });
         if (res.ok) {
           const data = await res.json();

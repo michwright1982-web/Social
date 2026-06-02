@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       // ── OpenAI ────────────────────────────────────────────────────────────
       case 'OpenAI': {
         const res = await fetch('https://api.openai.com/v1/models', {
-          headers: { Authorization: `Bearer ${key}` },
+          headers: { Authorization: `Bearer ${key.trim()}` },
         });
         if (res.ok) return NextResponse.json({ valid: true,  message: 'OpenAI key is valid' });
         if (res.status === 401)

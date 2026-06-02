@@ -200,18 +200,24 @@ export async function POST(req: NextRequest) {
         openAiSize = '512x512'; // dall-e-2 only supports square sizes up to 1024
       }
 
+      const reqBody: any = {
+        model: cleanModelId,
+        prompt: enhancedPrompt,
+        n: 1,
+        size: openAiSize
+      };
+
+      if (cleanModelId !== 'dall-e-2') {
+        reqBody.quality = 'standard';
+      }
+
       const res = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${providerKey}`
+          'Authorization': `Bearer ${providerKey.trim()}`
         },
-        body: JSON.stringify({
-          model: cleanModelId,
-          prompt: enhancedPrompt,
-          n: 1,
-          size: openAiSize
-        })
+        body: JSON.stringify(reqBody)
       });
 
       if (!res.ok) {
