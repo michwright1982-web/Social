@@ -29,7 +29,7 @@ const GENERATED_IMAGES: string[] = [];
 export default function StudioPage() {
   const [prompt, setPrompt] = useState('');
   const [selectedProvider, setSelectedProvider] = useState('OpenAI');
-  const [selectedModel, setSelectedModel] = useState('dalle3');
+  const [selectedModel, setSelectedModel] = useState('dall-e-3');
   const [selectedStyle, setSelectedStyle] = useState('Photorealistic');
   const [numVariations, setNumVariations] = useState(2);
   const [state, setState] = useState<GenerationState>('idle');

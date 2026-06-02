@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
 
     } else if (provider === 'Google AI Studio') {
       // ── Google AI Studio (Dynamic Model ID) ──────────────────────────────────
-      const cleanModelId = (model || 'imagen-4.0-generate-001').replace(/^models\//, '');
+      const cleanModelId = (model || 'imagen-3.0-generate-001').replace(/^models\//, '');
       
       let googleRatio = ratio;
       if (ratio === '4:5') googleRatio = '3:4'; // Google fallback for 4:5

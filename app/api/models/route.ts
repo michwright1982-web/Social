@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
           const mappedModels = googleModels.map((m: any) => {
             const id = m.name.replace(/^models\//, '');
             let label = m.displayName || id;
-            if (label === 'Imagen 4') label = 'Imagen 4 (Generate 001)';
+            if (label === 'Imagen 3') label = 'Imagen 3 (Generate 001)';
             
             let badge = 'Latest';
             if (id.includes('ultra')) badge = 'Ultra';
@@ -116,21 +116,21 @@ export async function GET(req: NextRequest) {
             dynamicModels = [...dynamicModels, ...mappedModels];
           } else {
             dynamicModels.push(
-              { id: 'imagen-4.0-generate-001', label: 'Imagen 4 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
-              { id: 'imagen-4.0-fast-generate-001', label: 'Imagen 4 Fast', provider: 'Google AI Studio', badge: 'Fast' }
+              { id: 'imagen-3.0-generate-001', label: 'Imagen 3 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
+              { id: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast', provider: 'Google AI Studio', badge: 'Fast' }
             );
           }
         } else {
           dynamicModels.push(
-            { id: 'imagen-4.0-generate-001', label: 'Imagen 4 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
-            { id: 'imagen-4.0-fast-generate-001', label: 'Imagen 4 Fast', provider: 'Google AI Studio', badge: 'Fast' }
+            { id: 'imagen-3.0-generate-001', label: 'Imagen 3 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
+            { id: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast', provider: 'Google AI Studio', badge: 'Fast' }
           );
         }
       } catch (err) {
         console.error('Failed to fetch Google AI models:', err);
         dynamicModels.push(
-          { id: 'imagen-4.0-generate-001', label: 'Imagen 4 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
-          { id: 'imagen-4.0-fast-generate-001', label: 'Imagen 4 Fast', provider: 'Google AI Studio', badge: 'Fast' }
+          { id: 'imagen-3.0-generate-001', label: 'Imagen 3 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
+          { id: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast', provider: 'Google AI Studio', badge: 'Fast' }
         );
       }
     } else {
