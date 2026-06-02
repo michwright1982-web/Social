@@ -170,7 +170,8 @@ export default function EditorPage() {
       <div className="main-content">
         <Topbar title="Unified Editor" subtitle="Edit captions and publish to all platforms" />
         <div className="page-content">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
 
             {/* LEFT — Campaign Image */}
             <motion.div
@@ -492,6 +493,7 @@ export default function EditorPage() {
                 )}
               </AnimatePresence>
             </motion.div>
+          </div>
           </div>
         </div>
       </div>

@@ -33,7 +33,7 @@ export default function StudioPage() {
   const [selectedProvider, setSelectedProvider] = useState('OpenAI');
   const [selectedModel, setSelectedModel] = useState('gpt-image-1');
   const [selectedStyle, setSelectedStyle] = useState('Photorealistic');
-  const [numVariations, setNumVariations] = useState(2);
+  const [numVariations, setNumVariations] = useState(1);
   const [state, setState] = useState<GenerationState>('idle');
   const [progress, setProgress] = useState(0);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -506,7 +506,7 @@ export default function StudioPage() {
                   <span>Variations</span>
                   <span style={{ color: '#7c3aed', fontWeight: 700 }}>{numVariations}</span>
                 </label>
-                <input type="range" min={2} max={8} value={numVariations} onChange={e => setNumVariations(Number(e.target.value))}
+                <input type="range" min={1} max={8} value={numVariations} onChange={e => setNumVariations(Number(e.target.value))}
                   style={{ width: '100%', marginTop: '6px', height: '6px', accentColor: '#7c3aed', cursor: 'pointer' }} />
               </div>
 

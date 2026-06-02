@@ -368,6 +368,7 @@ function VaultContent() {
             )}
           </AnimatePresence>
 
+          <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
           {/* ── Security Banner ────────────────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -740,6 +741,7 @@ function VaultContent() {
               </motion.div>
             </motion.div>
 
+          </div>
           </div>
         </div>
       </div>
