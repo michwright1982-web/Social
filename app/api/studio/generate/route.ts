@@ -9,14 +9,14 @@ interface ApiKey {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { prompt: string; provider: string; model?: string; style?: string; ratio?: string; variations?: number };
+  let body: { prompt: string; provider: string; model?: string; style?: string; styleRules?: string; ratio?: string; variations?: number };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { prompt, provider, model, style = 'Photorealistic', ratio = '1:1' } = body;
+  const { prompt, provider, model, style = 'Photorealistic', styleRules = '', ratio = '1:1' } = body;
   if (!prompt || !provider) {
     return NextResponse.json({ error: 'prompt and provider are required' }, { status: 400 });
   }
@@ -43,7 +43,11 @@ export async function POST(req: NextRequest) {
     }
     providerKey = foundKey;
 
-  const enhancedPrompt = `${prompt}, style: ${style}, high quality, detailed`;
+  const enhancedPrompt = styleRules 
+    ? `${prompt}. Strict Style Rules to follow:
+${styleRules}
+Maintain high quality, highly detailed composition.`
+    : `${prompt}, style: ${style}, high quality, detailed`;
 
   try {
     if (provider === 'Google AI Studio') {

@@ -14,7 +14,66 @@ import Link from 'next/link';
 
 // Dynamic models will be fetched from the backend.
 
-const STYLES = ['Photorealistic', 'Cinematic', 'Editorial', 'Minimalist', 'Bold & Vibrant', 'Luxury'];
+interface StyleOption {
+  id: string;
+  name: string;
+  description: string;
+  sampleImage: string;
+  rules: string;
+}
+
+const STYLES: StyleOption[] = [
+  {
+    id: 'glassmorphism',
+    name: 'Glassmorphism & Cyber-Premium',
+    description: 'Layered frosted glass panels over vibrant neon gradients. Futuristic & highly polished, perfect for tech or premium brands.',
+    sampleImage: '/styles/glassmorphism.png',
+    rules: `* Visual Elements: Layered, translucent frosted glass cards or panels. Ensure a visible background blur (bokeh) behind the glass elements. Include glowing UI elements, subtle glowing data lines, or abstract geometric shapes floating in the background.
+* Color Palette: Dark mode aesthetic (deep charcoal, obsidian, or midnight blue) heavily contrasted with vivid neon gradients (cyan to purple, or electric pink to orange) in the blurred background.
+* Lighting & Texture: Apply a subtle white inner border (1px) to the glass panels to catch the light. Lighting must be sleek, cinematic, and originate from the glowing background elements.
+* Composition & Layout: Center the primary glass panel. Maintain extreme structural alignment. Leave the top 20% and bottom 20% of the glass panel empty for text insertion.`
+  },
+  {
+    id: 'isometric',
+    name: '3D Isometric Ecosystem',
+    description: 'Fixed 45-degree top-down perspective diorama. Ideal for complex workflows, business solutions, and process maps.',
+    sampleImage: '/styles/isometric.png',
+    rules: `* Visual Elements: Render the scene strictly in a 3D isometric projection (orthographic camera, no converging perspective lines). Build the scene as a floating "island" or a diorama containing miniature buildings, devices, or abstract system blocks.
+* Color Palette: Use an analogous color scheme (colors next to each other on the wheel) with one bright complementary accent color to highlight the most important object.
+* Lighting & Texture: Soft ambient occlusion. Use smooth, matte textures (like matte plastic or vinyl) with clean, diffused studio lighting. Eliminate harsh, jagged shadows.
+* Composition & Layout: Place the primary isometric structure dead center, floating in a void of negative space. The background must be a solid, soft color.`
+  },
+  {
+    id: 'chaos_maximalism',
+    name: 'Chaos Maximalism & Collage',
+    description: 'Loud, energetic mixed-media scrapbook style. Great for food & beverage, events, and bold promotions.',
+    sampleImage: '/styles/chaos_maximalism.png',
+    rules: `* Visual Elements: Combine mixed-media elements: halftone dot patterns, torn paper edges, masking tape strips, doodle overlays, and pop-art cutouts. Subjects should have thick, irregular white sticker borders around them.
+* Color Palette: Hyper-saturated, clashing primary and secondary colors (bright yellow, magenta, electric blue). Flat, punchy colors only.
+* Lighting & Texture: Mimic physical textures like crumpled paper, grainy film, and risograph print misalignments. Lighting should feel like a direct, harsh camera flash.
+* Composition & Layout: Asymmetrical and dynamic. Overlap elements heavily. Angle objects and text diagonally. Controlled clutter around the edges, leaving the center clear for the subject.`
+  },
+  {
+    id: 'neo_minimalist',
+    name: 'Neo-Minimalist Editorial',
+    description: 'High-end luxury magazine layout with vast empty spaces and stark shadows. Perfect for corporate and premium items.',
+    sampleImage: '/styles/neo_minimalist.png',
+    rules: `* Visual Elements: A single, isolated, high-definition subject (a product, an executive, or a stark geometric shape). Zero background clutter. No decorative icons, arrows, or flourishes.
+* Color Palette: Monochromatic or strictly limited to two neutral colors (cream, slate, espresso, or stark black/white) paired with exactly one rich accent color (forest green, terracotta).
+* Lighting & Texture: Cinematic, moody, highly controlled lighting. Use deep, dramatic shadows on the subject. Add a very subtle, sophisticated 35mm film grain over the entire image.
+* Composition & Layout: Apply the rule of thirds aggressively. Push the subject entirely to the far right or bottom corner. Force 70-80% of the canvas to be pure negative space.`
+  },
+  {
+    id: 'claymorphism',
+    name: 'Tactile Claymorphism',
+    description: 'Approachable 3D pillowy clay aesthetic. Bouncy, friendly, and highly engaging for modern app marketing and B2C campaigns.',
+    sampleImage: '/styles/claymorphism.png',
+    rules: `* Visual Elements: All objects, characters, and UI elements must be 3D with extremely rounded corners. Zero sharp edges. Elements should look inflated, pillowy, and soft.
+* Color Palette: Bright pastel palettes (mint green, baby blue, soft peach, lilac) with low contrast between foreground and background colors.
+* Lighting & Texture: Smooth, non-reflective plasticine or clay textures. Dual-lighting: warm soft primary light from top left, cool rim light from bottom right to give bubbly volume.
+* Composition & Layout: Floating or bouncing elements in mid-air. Soft, blurry drop shadows beneath objects to establish depth against a solid pastel background.`
+  }
+];
 
 type GenerationState = 'idle' | 'generating' | 'done';
 
@@ -32,7 +91,8 @@ export default function StudioPage() {
   const [prompt, setPrompt] = useState('');
   const [selectedProvider, setSelectedProvider] = useState('OpenAI');
   const [selectedModel, setSelectedModel] = useState('gpt-image-1');
-  const [selectedStyle, setSelectedStyle] = useState('Photorealistic');
+  const [selectedStyle, setSelectedStyle] = useState('glassmorphism');
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [numVariations, setNumVariations] = useState(1);
   const [state, setState] = useState<GenerationState>('idle');
   const [progress, setProgress] = useState(0);
@@ -118,10 +178,19 @@ export default function StudioPage() {
       // We ask for multiple variations visually, but some APIs (like DALL-E) cost a lot per image.
       // For now, we will generate 1 real image and duplicate it for the demo variations 
       // if the API only returns 1, to match the UI behavior without breaking the bank.
+      const selectedStyleObj = STYLES.find(s => s.id === selectedStyle);
       const res = await fetch('/api/studio/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, provider, model: selectedModel, style: selectedStyle, ratio: aspectRatio, variations: numVariations })
+        body: JSON.stringify({
+          prompt,
+          provider,
+          model: selectedModel,
+          style: selectedStyleObj?.name || selectedStyle,
+          styleRules: selectedStyleObj?.rules || '',
+          ratio: aspectRatio,
+          variations: numVariations
+        })
       });
 
       const data = await res.json();
@@ -222,6 +291,152 @@ export default function StudioPage() {
 
           {/* Main Gallery Area — Takes full width now */}
           <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            
+            {/* Art Style Studio Section */}
+            <div style={{ marginBottom: '40px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Outfit', sans-serif" }}>
+                  <Sparkles size={18} color="#7c3aed" /> Art Style Studio
+                </h2>
+                <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                  Select a premium, high-converting visual style to instantly inject optimized AI rendering rules into your poster.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+                {STYLES.map(style => {
+                  const isSelected = selectedStyle === style.id;
+                  return (
+                    <div
+                      key={style.id}
+                      onClick={() => setSelectedStyle(style.id)}
+                      style={{
+                        background: isSelected ? 'rgba(124, 58, 237, 0.08)' : 'rgba(15, 22, 36, 0.4)',
+                        border: isSelected ? '2px solid #7c3aed' : '1px solid rgba(71, 85, 105, 0.2)',
+                        borderRadius: '16px',
+                        padding: '12px',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        boxShadow: isSelected ? '0 10px 25px -5px rgba(124, 58, 237, 0.25)' : 'none',
+                        transform: isSelected ? 'translateY(-2px)' : 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.border = '1px solid rgba(124, 58, 237, 0.4)';
+                          e.currentTarget.style.background = 'rgba(15, 22, 36, 0.6)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.border = '1px solid rgba(71, 85, 105, 0.2)';
+                          e.currentTarget.style.background = 'rgba(15, 22, 36, 0.4)';
+                        }
+                      }}
+                    >
+                      {/* Preview Thumbnail */}
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '10px', overflow: 'hidden', background: '#090d16' }}>
+                        <img
+                          src={style.sampleImage}
+                          alt={style.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s', transform: isSelected ? 'scale(1.05)' : 'scale(1)' }}
+                        />
+                        {isSelected && (
+                          <div style={{ position: 'absolute', top: '8px', right: '8px', width: '22px', height: '22px', borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.4)', zIndex: 2 }}>
+                            <Check size={12} color="white" strokeWidth={3} />
+                          </div>
+                        )}
+                        
+                        {/* Rules Info Trigger (Tooltip style) */}
+                        <div 
+                          title="View strict AI rules"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTooltip(activeTooltip === style.id ? null : style.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            background: 'rgba(15, 22, 36, 0.75)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            backdropFilter: 'blur(4px)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 3,
+                            color: '#94a3b8',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#e2e8f0'; e.currentTarget.style.background = 'rgba(15, 22, 36, 0.9)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(15, 22, 36, 0.75)'; }}
+                        >
+                          <Sliders size={11} />
+                        </div>
+                      </div>
+
+                      {/* Style Info */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: isSelected ? '#a78bfa' : '#cbd5e1', transition: 'color 0.2s' }}>{style.name}</h3>
+                        <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.4' }}>{style.description}</p>
+                      </div>
+                      
+                      {/* Detailed Rules Popover */}
+                      <AnimatePresence>
+                        {activeTooltip === style.id && (
+                          <>
+                            {/* Backdrop click to close */}
+                            <div 
+                              onClick={(e) => { e.stopPropagation(); setActiveTooltip(null); }}
+                              style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                            />
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                              transition={{ duration: 0.15 }}
+                              style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '12px',
+                                right: '12px',
+                                marginBottom: '10px',
+                                background: 'rgba(13, 17, 30, 0.98)',
+                                border: '1px solid rgba(124, 58, 237, 0.3)',
+                                backdropFilter: 'blur(20px)',
+                                boxShadow: '0 20px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+                                borderRadius: '12px',
+                                padding: '14px',
+                                zIndex: 100,
+                                maxHeight: '260px',
+                                overflowY: 'auto',
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Style Rules</span>
+                                <button onClick={() => setActiveTooltip(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}><X size={12} /></button>
+                              </div>
+                              <div style={{ fontSize: '10.5px', color: '#94a3b8', lineHeight: '1.5', whiteSpace: 'pre-wrap', fontFamily: "'Inter', sans-serif" }}>
+                                {style.rules}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -453,17 +668,17 @@ export default function StudioPage() {
                 <div style={{ display: 'flex', gap: '4px' }}>
                   {STYLES.map(s => (
                     <button
-                      key={s}
-                      onClick={() => setSelectedStyle(s)}
+                      key={s.id}
+                      onClick={() => setSelectedStyle(s.id)}
                       style={{
                         padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 600,
                         cursor: 'pointer', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap',
-                        background: selectedStyle === s ? 'rgba(124,58,237,0.2)' : 'rgba(30,41,59,0.4)',
-                        border: selectedStyle === s ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(71,85,105,0.2)',
-                        color: selectedStyle === s ? '#a78bfa' : '#64748b',
+                        background: selectedStyle === s.id ? 'rgba(124,58,237,0.2)' : 'rgba(30,41,59,0.4)',
+                        border: selectedStyle === s.id ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(71,85,105,0.2)',
+                        color: selectedStyle === s.id ? '#a78bfa' : '#64748b',
                         transition: 'all 0.2s',
                       }}
-                    >{s}</button>
+                    >{s.name.split(' & ')[0].split(' / ')[0]}</button>
                   ))}
                 </div>
               </div>
