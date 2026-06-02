@@ -108,8 +108,7 @@ export async function POST(req: NextRequest) {
         model: cleanModelId,
         prompt: enhancedPrompt,
         n: 1,
-        size: openAiSize,
-        response_format: 'b64_json'
+        size: openAiSize
       };
 
       if (cleanModelId !== 'gpt-image-1') {
