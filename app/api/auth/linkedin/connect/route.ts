@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { getAppCredentials } from '@/lib/oauth-token';
 
 /**
  * GET /api/auth/linkedin/connect
  * Redirects the user to LinkedIn's OAuth 2.0 consent screen.
  */
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const clientId = process.env.LINKEDIN_CLIENT_ID;
+  const { clientId } = await getAppCredentials(req, 'linkedin');
 
   if (!clientId) {
-    return NextResponse.json(
-      { error: 'LINKEDIN_CLIENT_ID is not configured. Add it to .env.local' },
-      { status: 500 },
-    );
+    return NextResponse.redirect(new URL('/vault?error=missing_credentials', req.url));
   }
 
   const state = crypto.randomBytes(16).toString('hex');

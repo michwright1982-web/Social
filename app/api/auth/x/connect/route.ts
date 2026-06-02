@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { encryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
+import { encryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
 
 /**
  * GET /api/auth/x/connect
  * Redirects the user to X (Twitter) OAuth 2.0 consent screen using PKCE.
  * X requires PKCE (Proof Key for Code Exchange) for public/confidential clients.
  */
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const clientId = process.env.X_CLIENT_ID;
+  const { clientId } = await getAppCredentials(req, 'x');
 
   if (!clientId) {
-    return NextResponse.json(
-      { error: 'X_CLIENT_ID is not configured. Add it to .env.local' },
-      { status: 500 },
-    );
+    return NextResponse.redirect(new URL('/vault?error=missing_credentials', req.url));
   }
 
   const redirectUri = `${appUrl}/api/auth/x/callback`;

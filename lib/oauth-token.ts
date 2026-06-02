@@ -86,3 +86,32 @@ export const COOKIE_OPTIONS = {
   path:      '/',
   maxAge:    60 * 60 * 24 * 60, // 60 days
 };
+
+// ── App Credentials Helper ───────────────────────────────────────────────────
+
+/** Reads configured OAuth Client ID & Secret from the encrypted cookie */
+export async function getAppCredentials(req: import('next/server').NextRequest, platform: string) {
+  const rawCookie = req.cookies.get('oauth_app_creds')?.value;
+  let clientId = '';
+  let clientSecret = '';
+
+  if (rawCookie) {
+    try {
+      const decrypted = await decryptToken(rawCookie);
+      const creds = JSON.parse(decrypted) as Record<string, { clientId: string; clientSecret: string }>;
+      if (creds[platform]) {
+        clientId = creds[platform].clientId;
+        clientSecret = creds[platform].clientSecret;
+      }
+    } catch {
+      // Ignore decryption errors
+    }
+  }
+
+  // Fallback to process.env if not configured in UI
+  const envPrefix = platform === 'x' ? 'X' : platform.toUpperCase();
+  return {
+    clientId: clientId || process.env[`${envPrefix}_CLIENT_ID`] || '',
+    clientSecret: clientSecret || process.env[`${envPrefix}_CLIENT_SECRET`] || '',
+  };
+}

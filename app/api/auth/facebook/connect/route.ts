@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { getAppCredentials } from '@/lib/oauth-token';
 
 /**
  * GET /api/auth/facebook/connect
  * Redirects the user to Facebook's OAuth consent screen.
  * Uses a random `state` param stored in a short-lived cookie for CSRF protection.
  */
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const clientId = process.env.FACEBOOK_CLIENT_ID;
+  const { clientId } = await getAppCredentials(req, 'facebook');
 
   if (!clientId) {
-    return NextResponse.json(
-      { error: 'FACEBOOK_CLIENT_ID is not configured. Add it to .env.local' },
-      { status: 500 },
-    );
+    return NextResponse.redirect(new URL('/vault?error=missing_credentials', req.url));
   }
 
   const state = crypto.randomBytes(16).toString('hex');

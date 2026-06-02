@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 
 const AI_MODELS = [
+  { id: 'imagen3', label: 'Imagen 3', provider: 'Google AI Studio', badge: 'Ultra-real' },
   { id: 'dalle3', label: 'DALL-E 3', provider: 'OpenAI', badge: 'Recommended' },
   { id: 'sdxl', label: 'Stable Diffusion XL', provider: 'Stability AI', badge: 'ControlNet' },
   { id: 'midjourney', label: 'Midjourney v6', provider: 'Midjourney', badge: 'Creative' },
@@ -36,6 +37,8 @@ export default function StudioPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [language, setLanguage] = useState('English');
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -48,23 +51,53 @@ export default function StudioPage() {
     }
   }, []);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setState('generating');
     setProgress(0);
     setSelectedVariation(null);
+    setErrorMsg(null);
+    setGeneratedImages([]);
 
-    // Simulated progress — wire to real AI API
+    // Start a fake progress bar while the request runs
     const interval = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setState('done');
-          return 100;
-        }
-        return p + Math.random() * 8;
-      });
+      setProgress(p => (p >= 90 ? 90 : p + Math.random() * 8));
     }, 400);
+
+    try {
+      const selectedModelObj = AI_MODELS.find(m => m.id === selectedModel);
+      const provider = selectedModelObj?.provider || 'OpenAI';
+
+      // We ask for multiple variations visually, but some APIs (like DALL-E) cost a lot per image.
+      // For now, we will generate 1 real image and duplicate it for the demo variations 
+      // if the API only returns 1, to match the UI behavior without breaking the bank.
+      const res = await fetch('/api/studio/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, provider, model: selectedModel, style: selectedStyle })
+      });
+
+      const data = await res.json();
+      clearInterval(interval);
+      setProgress(100);
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to generate');
+      }
+
+      // If we got images, populate the array
+      if (data.images && data.images.length > 0) {
+        // Pad the array to match numVariations for UI purposes
+        const images = Array.from({ length: numVariations }).map((_, i) => data.images[i % data.images.length]);
+        setGeneratedImages(images);
+      }
+      
+      setState('done');
+    } catch (err: any) {
+      clearInterval(interval);
+      setState('idle');
+      setErrorMsg(err.message);
+    }
   };
 
   const handleReset = () => {
@@ -247,6 +280,18 @@ export default function StudioPage() {
                 </AnimatePresence>
               </div>
 
+              {/* Error Message */}
+              <AnimatePresence>
+                {errorMsg && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
+                    <div style={{ padding: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', color: '#f87171', fontSize: '12px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                      <X size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
+                      <div>{errorMsg}</div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Generate Button */}
               <motion.button
                 className="btn-primary"
@@ -340,9 +385,6 @@ export default function StudioPage() {
                           <Check size={9} /> Done
                         </span>
                       </h2>
-                      <p style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
-                        Connect your AI provider in the Vault to see real generated images here.
-                      </p>
                     </div>
                     <button className="btn-ghost" onClick={handleReset} style={{ fontSize: '12px', padding: '8px 14px' }}>
                       <RotateCcw size={12} /> Regenerate
@@ -369,11 +411,12 @@ export default function StudioPage() {
                             boxShadow: selectedVariation === i ? '0 0 0 4px rgba(124,58,237,0.2)' : 'none',
                             height: `${220 + (i % 3) * 60}px`,
                             background: 'rgba(124,58,237,0.05)',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px',
                           }}
                         >
-                          <ImageIcon size={24} color="rgba(124,58,237,0.25)" />
-                          <span style={{ fontSize: '11px', color: '#475569' }}>Variation {i + 1}</span>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={generatedImages[i]} alt={`Variation ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%)', opacity: selectedVariation === i ? 1 : 0.6, transition: '0.3s' }} />
                           <span className="badge badge-violet" style={{ fontSize: '9px', position: 'absolute', bottom: '10px', left: '10px' }}>V{i + 1}</span>
 
                           {selectedVariation === i && (

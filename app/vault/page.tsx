@@ -9,7 +9,7 @@ import {
   KeyRound, Eye, EyeOff, Plus, Trash2, CheckCircle2,
   AlertCircle, Lock, Shield,
   Zap, ExternalLink, RefreshCw, Copy, Check,
-  Server, Brain, Image as ImageIcon, Loader2, Sparkles,
+  Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 
@@ -75,6 +75,12 @@ function VaultContent() {
   const [statusLoading, setStatusLoading]   = useState(true);
   const [disconnecting, setDisconnecting]   = useState<string | null>(null);
 
+  // ── Developer App Creds state ──────────────────────────────────────────────
+  const [oauthCreds, setOauthCreds] = useState<Record<string, { clientId: string; isSecretSet: boolean }>>({});
+  const [editingCredsPlatform, setEditingCredsPlatform] = useState<string | null>(null);
+  const [credsForm, setCredsForm] = useState({ clientId: '', clientSecret: '' });
+  const [savingCreds, setSavingCreds] = useState(false);
+
   // ── Toast notification ─────────────────────────────────────────────────────
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -83,13 +89,20 @@ function VaultContent() {
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  // ── Load real OAuth status on mount ────────────────────────────────────────
-  const loadStatus = useCallback(async () => {
+  // ── Load real OAuth status & configs on mount ─────────────────────────────
+  const loadInitialData = useCallback(async () => {
     setStatusLoading(true);
     try {
-      const res  = await fetch('/api/auth/status');
-      const data = (await res.json()) as SocialStatuses;
-      setSocialStatuses(data);
+      const [statusRes, keysRes, credsRes] = await Promise.all([
+        fetch('/api/auth/status'),
+        fetch('/api/keys'),
+        fetch('/api/auth/credentials')
+      ]);
+      
+      if (statusRes.ok) setSocialStatuses(await statusRes.json());
+      if (keysRes.ok) setApiKeys(await keysRes.json());
+      if (credsRes.ok) setOauthCreds(await credsRes.json());
+
     } catch {
       showToast('Failed to load connection status', 'error');
     } finally {
@@ -98,8 +111,8 @@ function VaultContent() {
   }, [showToast]);
 
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
+    loadInitialData();
+  }, [loadInitialData]);
 
   // ── Handle ?connected= or ?error= redirects from callbacks ────────────────
   useEffect(() => {
@@ -109,7 +122,7 @@ function VaultContent() {
     if (connected) {
       const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
       showToast(`✓ ${label} connected successfully!`, 'success');
-      loadStatus();
+      loadInitialData();
       // Clean URL without re-render
       window.history.replaceState({}, '', '/vault');
     }
@@ -129,7 +142,7 @@ function VaultContent() {
       showToast(messages[error] ?? `Connection error: ${error}`, 'error');
       window.history.replaceState({}, '', '/vault');
     }
-  }, [searchParams, showToast, loadStatus]);
+  }, [searchParams, showToast, loadInitialData]);
 
   // ── Disconnect a platform ──────────────────────────────────────────────────
   const handleDisconnect = async (platformId: string) => {
@@ -187,7 +200,23 @@ function VaultContent() {
     }
   };
 
-  const handleDeleteKey = (id: string) => setApiKeys(prev => prev.filter(k => k.id !== id));
+  const saveKeysToApi = async (newKeys: ApiKey[]) => {
+    try {
+      await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newKeys)
+      });
+    } catch (err) {
+      console.error('Failed to save keys', err);
+    }
+  };
+
+  const handleDeleteKey = (id: string) => {
+    const newKeys = apiKeys.filter(k => k.id !== id);
+    setApiKeys(newKeys);
+    saveKeysToApi(newKeys);
+  };
 
   const handleAddKey = () => {
     if (!newProvider || !newKey) return;
@@ -201,10 +230,52 @@ function VaultContent() {
       color:    config.color,
       icon:     config.icon,
     };
-    setApiKeys(prev => [...prev, key]);
+    const newKeys = [...apiKeys, key];
+    setApiKeys(newKeys);
+    saveKeysToApi(newKeys);
     setNewProvider(''); setNewKey(''); setNewLabel('');
     setShowAddKey(false);
     showToast(`${newProvider} key saved.`, 'success');
+  };
+
+  // ── Developer App Creds Save ───────────────────────────────────────────────
+  const handleSaveCreds = async () => {
+    if (!editingCredsPlatform) return;
+    setSavingCreds(true);
+    try {
+      const res = await fetch('/api/auth/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [editingCredsPlatform]: credsForm
+        })
+      });
+      if (res.ok) {
+        showToast('App credentials saved securely', 'success');
+        await loadInitialData();
+        setEditingCredsPlatform(null);
+      } else {
+        showToast('Failed to save app credentials', 'error');
+      }
+    } catch {
+      showToast('Network error while saving credentials', 'error');
+    } finally {
+      setSavingCreds(false);
+    }
+  };
+
+  const handleClearCreds = async (platformId: string) => {
+    try {
+      await fetch('/api/auth/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [platformId]: { clientId: '', clientSecret: '' } })
+      });
+      await loadInitialData();
+      showToast('Credentials cleared', 'success');
+    } catch {
+      showToast('Failed to clear credentials', 'error');
+    }
   };
 
   // ── Badge helpers ──────────────────────────────────────────────────────────
@@ -406,6 +477,8 @@ function VaultContent() {
                   const status     = socialStatuses[platform.id] ?? { connected: false };
                   const isLoading  = statusLoading;
                   const isDisconnecting = disconnecting === platform.id;
+                  const creds      = oauthCreds[platform.id];
+                  const hasCreds   = !!creds?.clientId;
 
                   return (
                     <motion.div
@@ -414,7 +487,7 @@ function VaultContent() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.1 }}
                       className="glass-card"
-                      style={{ padding: '18px 20px' }}
+                      style={{ padding: '18px 20px', overflow: 'hidden' }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -422,7 +495,10 @@ function VaultContent() {
                             {platform.icon}
                           </div>
                           <div>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>{platform.label}</div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {platform.label}
+                              {hasCreds && <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', color: '#34d399', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>App Configured</span>}
+                            </div>
                             <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
                               {isLoading ? (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -438,23 +514,83 @@ function VaultContent() {
                                   )}
                                 </span>
                               ) : (
-                                'Not connected'
+                                hasCreds ? 'Ready to connect' : 'Requires Developer App credentials'
                               )}
                             </div>
                           </div>
                         </div>
 
-                        {/* Status badge */}
-                        {isLoading ? (
-                          <span className="badge" style={{ background: 'rgba(71,85,105,0.15)', color: '#475569', border: '1px solid rgba(71,85,105,0.2)' }}>
-                            <Loader2 size={9} className="spin-slow" /> Loading
-                          </span>
-                        ) : status.connected ? (
-                          <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>
-                        ) : (
-                          <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Disconnected</span>
-                        )}
+                        {/* Status badge & Settings icon */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {isLoading ? (
+                            <span className="badge" style={{ background: 'rgba(71,85,105,0.15)', color: '#475569', border: '1px solid rgba(71,85,105,0.2)' }}>
+                              <Loader2 size={9} className="spin-slow" /> Loading
+                            </span>
+                          ) : status.connected ? (
+                            <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>
+                          ) : (
+                            <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Disconnected</span>
+                          )}
+                          <button 
+                            className="btn-ghost" 
+                            style={{ padding: '6px' }}
+                            onClick={() => {
+                              if (editingCredsPlatform === platform.id) {
+                                setEditingCredsPlatform(null);
+                              } else {
+                                setEditingCredsPlatform(platform.id);
+                                setCredsForm({ clientId: creds?.clientId || '', clientSecret: '' });
+                              }
+                            }}
+                          >
+                            <Settings size={14} />
+                          </button>
+                        </div>
                       </div>
+
+                      {/* Developer App Config Panel */}
+                      <AnimatePresence>
+                        {editingCredsPlatform === platform.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            style={{ overflow: 'hidden' }}
+                          >
+                            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(124,58,237,0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
+                                Configure {platform.label} App
+                                <a href="#" style={{ color: '#06b6d4', textDecoration: 'none', fontWeight: 500 }}>Setup Guide ↗</a>
+                              </div>
+                              <input 
+                                className="input-field" 
+                                placeholder="Client ID (App ID)" 
+                                value={credsForm.clientId}
+                                onChange={e => setCredsForm(prev => ({ ...prev, clientId: e.target.value }))}
+                                style={{ fontSize: '13px', fontFamily: 'monospace' }} 
+                              />
+                              <input 
+                                className="input-field" 
+                                type="password" 
+                                placeholder={creds?.isSecretSet ? "Client Secret (•••••••• saved)" : "Client Secret"} 
+                                value={credsForm.clientSecret}
+                                onChange={e => setCredsForm(prev => ({ ...prev, clientSecret: e.target.value }))}
+                                style={{ fontSize: '13px', fontFamily: 'monospace' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="btn-primary" style={{ flex: 1, padding: '8px', fontSize: '12px', justifyContent: 'center' }} onClick={handleSaveCreds} disabled={savingCreds}>
+                                  {savingCreds ? <Loader2 size={12} className="spin-slow" /> : <Lock size={12} />} Save Credentials
+                                </button>
+                                {hasCreds && (
+                                  <button className="btn-ghost" style={{ padding: '8px 12px', fontSize: '12px', color: '#f87171' }} onClick={() => { setEditingCredsPlatform(null); handleClearCreds(platform.id); }}>
+                                    Clear
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       {/* Action buttons */}
                       <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
@@ -483,12 +619,19 @@ function VaultContent() {
                         ) : (
                           /* Full-page redirect — no JS fetch needed */
                           <a
-                            href={`/api/auth/${platform.id}/connect`}
+                            href={hasCreds ? `/api/auth/${platform.id}/connect` : '#'}
+                            onClick={e => {
+                              if (!hasCreds) {
+                                e.preventDefault();
+                                setEditingCredsPlatform(platform.id);
+                                showToast('Please configure Developer App credentials first', 'error');
+                              }
+                            }}
                             style={{ flex: 1, textDecoration: 'none' }}
                             id={`connect-${platform.id}`}
                           >
-                            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }}>
-                              <ExternalLink size={11} /> Connect via OAuth
+                            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px', opacity: hasCreds ? 1 : 0.5 }} disabled={!hasCreds}>
+                              <ExternalLink size={11} /> {hasCreds ? 'Connect via OAuth' : 'Configure App to Connect'}
                             </button>
                           </a>
                         )}

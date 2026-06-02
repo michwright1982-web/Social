@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { encryptToken, decryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
+import { encryptToken, decryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
 
 /**
  * GET /api/auth/x/callback
@@ -39,8 +39,11 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Exchange code → access token ──────────────────────────────────────────
-  const clientId     = process.env.X_CLIENT_ID!;
-  const clientSecret = process.env.X_CLIENT_SECRET!;
+  const { clientId, clientSecret } = await getAppCredentials(req, 'x');
+  if (!clientId || !clientSecret) {
+    console.error('[x/callback] Missing client ID or secret in config');
+    return NextResponse.redirect(new URL('/vault?error=x_token_failed', req.url));
+  }
   const redirectUri  = `${appUrl}/api/auth/x/callback`;
 
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');

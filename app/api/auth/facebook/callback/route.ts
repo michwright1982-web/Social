@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { encryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
+import { encryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
 
 /**
  * GET /api/auth/facebook/callback
@@ -34,8 +34,11 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Exchange code → access token ──────────────────────────────────────────
-  const clientId     = process.env.FACEBOOK_CLIENT_ID!;
-  const clientSecret = process.env.FACEBOOK_CLIENT_SECRET!;
+  const { clientId, clientSecret } = await getAppCredentials(req, 'facebook');
+  if (!clientId || !clientSecret) {
+    console.error('[facebook/callback] Missing client ID or secret in config');
+    return NextResponse.redirect(new URL('/vault?error=facebook_token_failed', req.url));
+  }
   const redirectUri  = `${appUrl}/api/auth/facebook/callback`;
 
   const tokenRes = await fetch(

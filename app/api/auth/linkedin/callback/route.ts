@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { encryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
+import { encryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
 
 /**
  * GET /api/auth/linkedin/callback
@@ -30,8 +30,11 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Exchange code → access token ──────────────────────────────────────────
-  const clientId     = process.env.LINKEDIN_CLIENT_ID!;
-  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET!;
+  const { clientId, clientSecret } = await getAppCredentials(req, 'linkedin');
+  if (!clientId || !clientSecret) {
+    console.error('[linkedin/callback] Missing client ID or secret in config');
+    return NextResponse.redirect(new URL('/vault?error=linkedin_token_failed', req.url));
+  }
   const redirectUri  = `${appUrl}/api/auth/linkedin/callback`;
 
   const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
