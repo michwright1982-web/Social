@@ -22,8 +22,6 @@ interface ApiKey {
   key: string;
   status: 'active' | 'invalid' | 'untested';
   lastUsed?: string;
-  color: string;
-  icon: React.ReactNode;
 }
 
 interface PlatformStatus {
@@ -220,15 +218,12 @@ function VaultContent() {
 
   const handleAddKey = () => {
     if (!newProvider || !newKey) return;
-    const config = PROVIDER_CONFIG[newProvider] ?? PROVIDER_CONFIG['Custom'];
     const key: ApiKey = {
       id:       Date.now().toString(),
       provider: newProvider,
       label:    newLabel || newProvider,
       key:      newKey,
       status:   'untested',
-      color:    config.color,
-      icon:     config.icon,
     };
     const newKeys = [...apiKeys, key];
     setApiKeys(newKeys);
@@ -410,7 +405,9 @@ function VaultContent() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {apiKeys.map((key, i) => (
+                  {apiKeys.map((key, i) => {
+                    const config = PROVIDER_CONFIG[key.provider] ?? PROVIDER_CONFIG['Custom'];
+                    return (
                     <motion.div
                       key={key.id}
                       initial={{ opacity: 0, x: -10 }}
@@ -421,8 +418,8 @@ function VaultContent() {
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: `${key.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: key.color }}>
-                            {key.icon}
+                          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: `${config.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.color }}>
+                            {config.icon}
                           </div>
                           <div>
                             <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{key.provider}</div>
@@ -458,7 +455,7 @@ function VaultContent() {
                         </div>
                       </div>
                     </motion.div>
-                  ))}
+                  )})}
                 </div>
               )}
             </motion.div>
