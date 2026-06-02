@@ -93,7 +93,7 @@ export default function EditorPage() {
       const res = await fetch('/api/captions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: 'dummy_base64_data' }),
+        body: JSON.stringify({ imageBase64: localImages[0] }),
       });
       
       const data = await res.json();

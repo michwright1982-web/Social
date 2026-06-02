@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
     } else if (provider === 'OpenAI') {
       // ── OpenAI (Dynamic Model ID) ──────────────────────────────────────────
       const cleanModelId = model || 'gpt-image-2';
+      const variations = body.variations || 1;
       
       let openAiSize = '1024x1024';
       if (ratio === '9:16' || ratio === '4:5' || ratio === '3:4') {
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
       const reqBody: any = {
         model: cleanModelId,
         prompt: enhancedPrompt,
-        n: 1,
+        n: 1, // Models force n=1 per request, so we loop below
         size: openAiSize
       };
 
@@ -115,45 +116,53 @@ export async function POST(req: NextRequest) {
         reqBody.quality = 'standard';
       }
 
-      const res = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${providerKey.trim()}`
-        },
-        body: JSON.stringify(reqBody)
-      });
+      const fetchPromises = Array.from({ length: variations }).map(() => 
+        fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${providerKey.trim()}`
+          },
+          body: JSON.stringify(reqBody)
+        })
+      );
 
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error('OpenAI Error:', errText);
+      const responses = await Promise.all(fetchPromises);
+      const resultingImages: string[] = [];
+
+      for (const res of responses) {
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error('OpenAI Error:', errText);
+          let customMessage = errText;
+          try {
+            const parsed = JSON.parse(errText);
+            if (parsed?.error?.message) {
+              customMessage = parsed.error.message;
+            }
+          } catch {}
+          return NextResponse.json({ error: `OpenAI Error: ${customMessage}` }, { status: res.status === 400 ? 400 : 502 });
+        }
         
-        let customMessage = errText;
-        try {
-          const parsed = JSON.parse(errText);
-          if (parsed?.error?.message) {
-            customMessage = parsed.error.message;
-          }
-        } catch {}
+        const data = await res.json();
+        const imgData = data?.data?.[0];
         
-        return NextResponse.json({ error: `OpenAI Error: ${customMessage}` }, { status: res.status === 400 ? 400 : 502 });
+        let imageUrl = imgData?.url;
+        if (!imageUrl && imgData?.b64_json) {
+          imageUrl = `data:image/png;base64,${imgData.b64_json}`;
+        }
+        if (imageUrl) {
+          resultingImages.push(imageUrl);
+        }
       }
 
-      const data = await res.json();
-      const imgData = data?.data?.[0];
-      
-      let imageUrl = imgData?.url;
-      if (!imageUrl && imgData?.b64_json) {
-        imageUrl = `data:image/png;base64,${imgData.b64_json}`;
-      }
-
-      if (!imageUrl) {
+      if (resultingImages.length === 0) {
         return NextResponse.json({ error: 'No image URL or base64 data returned from OpenAI' }, { status: 500 });
       }
 
       return NextResponse.json({ 
         success: true, 
-        images: [imageUrl] 
+        images: resultingImages 
       });
 
     } else {

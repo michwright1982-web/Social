@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import {
@@ -27,9 +28,10 @@ export type GeneratedImage = {
 const GENERATED_IMAGES: string[] = [];
 
 export default function StudioPage() {
+  const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [selectedProvider, setSelectedProvider] = useState('OpenAI');
-  const [selectedModel, setSelectedModel] = useState('gpt-image-2');
+  const [selectedModel, setSelectedModel] = useState('gpt-image-1');
   const [selectedStyle, setSelectedStyle] = useState('Photorealistic');
   const [numVariations, setNumVariations] = useState(2);
   const [state, setState] = useState<GenerationState>('idle');
@@ -119,7 +121,7 @@ export default function StudioPage() {
       const res = await fetch('/api/studio/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, provider, model: selectedModel, style: selectedStyle, ratio: aspectRatio })
+        body: JSON.stringify({ prompt, provider, model: selectedModel, style: selectedStyle, ratio: aspectRatio, variations: numVariations })
       });
 
       const data = await res.json();
@@ -341,22 +343,24 @@ export default function StudioPage() {
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>{selectedVariations.length} image{selectedVariations.length > 1 ? 's' : ''} selected</div>
                             <div style={{ fontSize: '11px', color: '#64748b' }}>Ready to generate captions & publish</div>
                           </div>
-                          <Link 
-                            href="/editor" 
-                            style={{ textDecoration: 'none' }}
-                            onClick={() => {
-                              const selectedUrls = selectedVariations
-                                .map(id => generatedImages.find(img => img.id === id)?.url)
-                                .filter(Boolean) as string[];
-                              if (selectedUrls.length > 0) {
-                                localStorage.setItem('creative_studio_selected_images', JSON.stringify(selectedUrls));
-                              }
-                            }}
-                          >
-                            <button className="btn-primary" style={{ fontSize: '13px', padding: '10px 18px' }} id="proceed-to-editor">
-                              <Sparkles size={14} /> Generate Captions <ArrowRight size={14} />
+                          <div>
+                            <button
+                              className="btn-primary"
+                              disabled={selectedVariations.length === 0}
+                              onClick={() => {
+                                const selectedUrls = selectedVariations
+                                  .map(id => generatedImages.find(img => img.id === id)?.url)
+                                  .filter(Boolean) as string[];
+                                if (selectedUrls.length > 0) {
+                                  localStorage.setItem('creative_studio_selected_images', JSON.stringify(selectedUrls));
+                                }
+                                router.push('/editor');
+                              }}
+                              style={{ padding: '14px 24px', fontSize: '14px' }}
+                            >
+                              Generate Captions <Send size={16} />
                             </button>
-                          </Link>
+                          </div>
                         </div>
                       </motion.div>
                     )}
