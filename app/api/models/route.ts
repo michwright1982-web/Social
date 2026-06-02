@@ -17,18 +17,11 @@ const FALLBACK_MODELS = [
 ];
 
 export async function GET(req: NextRequest) {
-  const freeSandboxModel = {
-    id: 'free-sandbox',
-    label: 'Sandbox Image Gen',
-    provider: 'Free Sandbox',
-    badge: 'Free (No Key)'
-  };
-
   const rawCookie = req.cookies.get('ai_provider_keys')?.value;
   if (!rawCookie) {
     return NextResponse.json({
-      providers: ['Free Sandbox'],
-      models: [freeSandboxModel]
+      providers: [],
+      models: []
     });
   }
 
@@ -38,13 +31,13 @@ export async function GET(req: NextRequest) {
     keys = JSON.parse(decrypted);
   } catch {
     return NextResponse.json({
-      providers: ['Free Sandbox'],
-      models: [freeSandboxModel]
+      providers: [],
+      models: []
     });
   }
 
-  const providers = ['Free Sandbox', ...Array.from(new Set(keys.map(k => k.provider)))];
-  let dynamicModels: any[] = [freeSandboxModel];
+  const providers = Array.from(new Set(keys.map(k => k.provider)));
+  let dynamicModels: any[] = [];
 
   // Iterate through active providers and fetch their live models if supported
   for (const provider of providers) {
