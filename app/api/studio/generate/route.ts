@@ -98,11 +98,10 @@ export async function POST(req: NextRequest) {
       const cleanModelId = model || 'gpt-image-2';
       
       let openAiSize = '1024x1024';
-      if (cleanModelId !== 'gpt-image-1') {
-        if (ratio === '9:16' || ratio === '4:5' || ratio === '3:4') openAiSize = '1024x1792';
-        else if (ratio === '16:9') openAiSize = '1792x1024';
-      } else {
-        openAiSize = '512x512'; // gpt-image-1 only supports square sizes up to 1024
+      if (ratio === '9:16' || ratio === '4:5' || ratio === '3:4') {
+        openAiSize = '1024x1536';
+      } else if (ratio === '16:9') {
+        openAiSize = '1536x1024';
       }
 
       const reqBody: any = {
