@@ -200,23 +200,33 @@ function VaultContent() {
 
   const saveKeysToApi = async (newKeys: ApiKey[]) => {
     try {
-      await fetch('/api/keys', {
+      const res = await fetch('/api/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newKeys)
       });
+      if (!res.ok) {
+        throw new Error('Failed to save to server');
+      }
+      return true;
     } catch (err) {
       console.error('Failed to save keys', err);
+      showToast('Failed to save keys securely', 'error');
+      return false;
     }
   };
 
-  const handleDeleteKey = (id: string) => {
+  const handleDeleteKey = async (id: string) => {
+    const previousKeys = [...apiKeys];
     const newKeys = apiKeys.filter(k => k.id !== id);
     setApiKeys(newKeys);
-    saveKeysToApi(newKeys);
+    const success = await saveKeysToApi(newKeys);
+    if (!success) {
+      setApiKeys(previousKeys); // revert on failure
+    }
   };
 
-  const handleAddKey = () => {
+  const handleAddKey = async () => {
     if (!newProvider || !newKey) return;
     const key: ApiKey = {
       id:       Date.now().toString(),
@@ -225,12 +235,18 @@ function VaultContent() {
       key:      newKey,
       status:   'untested',
     };
+    const previousKeys = [...apiKeys];
     const newKeys = [...apiKeys, key];
     setApiKeys(newKeys);
-    saveKeysToApi(newKeys);
-    setNewProvider(''); setNewKey(''); setNewLabel('');
-    setShowAddKey(false);
-    showToast(`${newProvider} key saved.`, 'success');
+    
+    const success = await saveKeysToApi(newKeys);
+    if (success) {
+      setNewProvider(''); setNewKey(''); setNewLabel('');
+      setShowAddKey(false);
+      showToast(`${newProvider} key saved.`, 'success');
+    } else {
+      setApiKeys(previousKeys);
+    }
   };
 
   // ── Developer App Creds Save ───────────────────────────────────────────────
