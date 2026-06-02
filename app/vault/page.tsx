@@ -188,10 +188,13 @@ function VaultContent() {
       const data = (await res.json()) as { valid: boolean; message: string };
       setTestResults(prev => ({ ...prev, [keyEntry.id]: data }));
       // Update the key's status based on test result
-      setApiKeys(prev => prev.map(k =>
-        k.id === keyEntry.id ? { ...k, status: data.valid ? 'active' : 'invalid' } : k
-      ));
-      showToast(data.message, data.valid ? 'success' : 'error');
+      const newStatus = data.valid ? 'active' : 'invalid';
+      const updatedKeys = apiKeys.map(k =>
+        k.id === keyEntry.id ? { ...k, status: newStatus as any } : k
+      );
+      setApiKeys(updatedKeys);
+      await saveKeysToApi(updatedKeys);
+      showToast(data.valid ? 'Key is correct' : 'Incorrect key', data.valid ? 'success' : 'error');
     } catch {
       showToast('Network error during key test', 'error');
     } finally {
@@ -294,7 +297,7 @@ function VaultContent() {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'active':       return <span className="badge badge-green"><CheckCircle2 size={9} /> Active</span>;
-      case 'invalid':      return <span className="badge badge-red"><AlertCircle size={9} /> Invalid</span>;
+      case 'invalid':      return <span className="badge badge-red"><AlertCircle size={9} /> Incorrect Key</span>;
       case 'connected':    return <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>;
       case 'expired':      return <span className="badge badge-amber"><AlertCircle size={9} /> Expired</span>;
       case 'disconnected': return <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Disconnected</span>;
