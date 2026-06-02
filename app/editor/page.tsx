@@ -12,47 +12,6 @@ import {
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 
-const SELECTED_IMAGE = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=700&h=800&fit=crop';
-
-const MOCK_CAPTIONS: Record<string, string> = {
-  facebook: `🚀 Introducing our Summer Collection — where luxury meets innovation.
-
-Every detail has been crafted with precision to elevate your lifestyle this season. From bold textures to refined silhouettes, our latest lineup is designed to make a statement.
-
-✨ Premium quality, timeless design.
-🛒 Shop now — link in bio or comment "SUMMER" to receive the exclusive catalog.
-
-#SummerCollection #LuxuryLifestyle #NewArrivals #Fashion2025`,
-
-  instagram: `Summer. Reimagined. ☀️✨
-
-Bold. Elevated. Yours.
-
-Drop our summer collection — tap the link in bio to explore 🔗
-
-#Summer2025 #LuxuryFashion #NewDrop #OOTD #FashionForward #Style #Aesthetic #Minimal #Fashion`,
-
-  x: `Just dropped: Our Summer Collection is here. 🌊
-
-Bold design. Premium quality. Limited availability.
-
-Shop now → [link]
-
-#Summer2025 #NewDrop`,
-
-  linkedin: `We're excited to announce the launch of our Summer 2025 Collection.
-
-After months of design iteration and material sourcing, we've curated a lineup that reflects our commitment to craftsmanship, sustainability, and modern aesthetics.
-
-This collection represents our brand values: quality without compromise, design without limits.
-
-We invite you to explore the full catalog and would love to hear your feedback.
-
-👉 View Collection: [link]
-
-#ProductLaunch #Innovation #BrandAnnouncement #Sustainability`,
-};
-
 const platforms = [
   {
     id: 'facebook', label: 'Facebook', icon: FacebookIcon, color: '#1877F2',
@@ -84,7 +43,9 @@ interface PlatformStatus {
 }
 
 export default function EditorPage() {
-  const [captions, setCaptions] = useState<Record<string, string>>(MOCK_CAPTIONS);
+  const [captions, setCaptions] = useState<Record<string, string>>(
+    Object.fromEntries(platforms.map(p => [p.id, '']))
+  );
   const [activePlatform, setActivePlatform] = useState('facebook');
   const [platformStatuses, setPlatformStatuses] = useState<Record<string, PlatformStatus>>(
     Object.fromEntries(platforms.map(p => [p.id, { status: 'idle' }]))
@@ -101,11 +62,8 @@ export default function EditorPage() {
 
   const handleRegenerate = (platformId: string) => {
     setIsRegenerating(platformId);
+    // Wire to real AI caption API — clears after timeout for now
     setTimeout(() => {
-      setCaptions(prev => ({
-        ...prev,
-        [platformId]: prev[platformId] + '\n\n[Regenerated with fresh AI output ✨]',
-      }));
       setIsRegenerating(null);
     }, 2000);
   };
@@ -120,16 +78,15 @@ export default function EditorPage() {
     setIsPublishingAll(true);
     setPublishDone(false);
 
-    // Simulate staggered publishing
     for (const p of platforms) {
       setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'publishing' } }));
       await new Promise(r => setTimeout(r, 800 + Math.random() * 600));
-      const success = p.id !== 'x'; // simulate X error for demo
+      // Wire to real social API per platform
       setPlatformStatuses(prev => ({
         ...prev,
         [p.id]: {
-          status: success ? 'success' : 'error',
-          message: success ? 'Posted successfully' : 'Token expired — reconnect account',
+          status: 'error',
+          message: 'Connect account in Vault to publish',
         },
       }));
     }
@@ -155,7 +112,7 @@ export default function EditorPage() {
         <div className="page-content">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
 
-            {/* LEFT — Final Image */}
+            {/* LEFT — Campaign Image */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -163,37 +120,16 @@ export default function EditorPage() {
               style={{ position: 'sticky', top: '80px' }}
             >
               <div className="glass-card" style={{ overflow: 'hidden' }}>
-                {/* Image */}
-                <div style={{ position: 'relative' }}>
-                  <img
-                    src={SELECTED_IMAGE}
-                    alt="Selected Campaign Visual"
-                    style={{ width: '100%', display: 'block', maxHeight: '480px', objectFit: 'cover' }}
-                  />
-                  <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '8px' }}>
-                    <span className="badge badge-green" style={{ backdropFilter: 'blur(8px)' }}>
-                      <Check size={9} /> Selected
-                    </span>
-                    <span className="badge badge-violet" style={{ backdropFilter: 'blur(8px)' }}>
-                      <ImageIcon size={9} /> V3
-                    </span>
+                {/* Image placeholder */}
+                <div style={{ position: 'relative', background: 'rgba(124,58,237,0.05)', minHeight: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', padding: '40px 24px', borderBottom: '1px solid rgba(124,58,237,0.1)' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ImageIcon size={24} color="#7c3aed" />
                   </div>
-                </div>
-
-                {/* Image info */}
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(124,58,237,0.1)' }}>
-                  <div style={{ display: 'flex', gap: '16px' }}>
-                    {[
-                      { label: 'Format', value: 'JPEG' },
-                      { label: 'Resolution', value: '2048×2560' },
-                      { label: 'Model', value: 'DALL-E 3' },
-                      { label: 'Style', value: 'Photorealistic' },
-                    ].map(info => (
-                      <div key={info.label}>
-                        <div style={{ fontSize: '10px', color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{info.label}</div>
-                        <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>{info.value}</div>
-                      </div>
-                    ))}
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8', marginBottom: '6px' }}>No image selected</div>
+                    <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.6, maxWidth: '240px' }}>
+                      Generate and select a variation in the Creative Studio first, then proceed here.
+                    </div>
                   </div>
                 </div>
 
@@ -314,6 +250,7 @@ export default function EditorPage() {
                         style={{ padding: '7px 12px', fontSize: '11px' }}
                         onClick={() => handleCopy(activePlatform, caption)}
                         id={`copy-${activePlatform}`}
+                        disabled={!caption}
                       >
                         {copied === activePlatform ? <><Check size={11} /> Copied!</> : <><Copy size={11} /> Copy</>}
                       </button>
@@ -337,6 +274,7 @@ export default function EditorPage() {
                     className="input-field"
                     value={caption}
                     onChange={e => setCaptions(prev => ({ ...prev, [activePlatform]: e.target.value }))}
+                    placeholder={`Write your ${platform.label} caption here, or use Regenerate to let AI draft one...`}
                     style={{ minHeight: '220px', fontSize: '13px', lineHeight: '1.7' }}
                   />
 
@@ -396,7 +334,7 @@ export default function EditorPage() {
                     Publishing to all platforms...
                   </>
                 ) : publishDone ? (
-                  <><Globe size={16} /> Published! Publish Again</>
+                  <><Globe size={16} /> Publish Again</>
                 ) : (
                   <><Send size={16} /> <Zap size={14} /> Publish Everywhere</>
                 )}

@@ -26,28 +26,20 @@ interface ApiKey {
 interface SocialAccount {
   id: string;
   platform: string;
-  handle: string;
   status: 'connected' | 'disconnected' | 'expired';
   color: string;
   icon: React.ReactNode;
-  followers?: string;
 }
 
-const initialApiKeys: ApiKey[] = [
-  { id: '1', provider: 'OpenAI', label: 'GPT-4o / DALL-E 3', key: 'sk-proj-••••••••••••••••••••XB9a', status: 'active', lastUsed: '2h ago', color: '#10b981', icon: <Brain size={16} /> },
-  { id: '2', provider: 'Anthropic', label: 'Claude 3.5 Sonnet', key: 'sk-ant-••••••••••••••••••••mNk2', status: 'active', lastUsed: '1d ago', color: '#f59e0b', icon: <Brain size={16} /> },
-  { id: '3', provider: 'Stability AI', label: 'Stable Diffusion XL', key: 'sk-••••••••••••••••••••Pq7r', status: 'invalid', lastUsed: '5d ago', color: '#8b5cf6', icon: <ImageIcon size={16} /> },
-];
-
 const socialAccounts: SocialAccount[] = [
-  { id: '1', platform: 'Facebook', handle: '@vinithbrand', status: 'connected', color: '#1877F2', icon: <FacebookIcon size={18} />, followers: '12.4K' },
-  { id: '2', platform: 'Instagram', handle: '@vinith.designs', status: 'connected', color: '#E1306C', icon: <InstagramIcon size={18} />, followers: '8.9K' },
-  { id: '3', platform: 'X (Twitter)', handle: '@vinithx', status: 'expired', color: '#ffffff', icon: <XSocialIcon size={18} />, followers: '3.2K' },
-  { id: '4', platform: 'LinkedIn', handle: 'Vinith Kumar', status: 'disconnected', color: '#0A66C2', icon: <LinkedinIcon size={18} />, followers: '—' },
+  { id: '1', platform: 'Facebook', status: 'disconnected', color: '#1877F2', icon: <FacebookIcon size={18} /> },
+  { id: '2', platform: 'Instagram', status: 'disconnected', color: '#E1306C', icon: <InstagramIcon size={18} /> },
+  { id: '3', platform: 'X (Twitter)', status: 'disconnected', color: '#ffffff', icon: <XSocialIcon size={18} /> },
+  { id: '4', platform: 'LinkedIn', status: 'disconnected', color: '#0A66C2', icon: <LinkedinIcon size={18} /> },
 ];
 
 export default function VaultPage() {
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [showAddKey, setShowAddKey] = useState(false);
   const [newProvider, setNewProvider] = useState('');
@@ -76,7 +68,17 @@ export default function VaultPage() {
   const handleAddKey = () => {
     if (!newProvider || !newKey) return;
     const key: ApiKey = {
-      id: Date.now().toString(), provider: newProvider, label: newLabel || newProvider, key: newKey, status: 'untested', color: '#7c3aed', icon: <Server size={16} />,
+      id: Date.now().toString(),
+      provider: newProvider,
+      label: newLabel || newProvider,
+      key: newKey,
+      status: 'untested',
+      color: '#7c3aed',
+      icon: newProvider === 'OpenAI' || newProvider === 'Anthropic'
+        ? <Brain size={16} />
+        : newProvider === 'Stability AI' || newProvider === 'Midjourney'
+          ? <ImageIcon size={16} />
+          : <Server size={16} />,
     };
     setApiKeys(prev => [...prev, key]);
     setNewProvider(''); setNewKey(''); setNewLabel('');
@@ -172,68 +174,83 @@ export default function VaultPage() {
               </AnimatePresence>
 
               {/* Keys List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {apiKeys.map((key, i) => (
-                  <motion.div
-                    key={key.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="glass-card"
-                    style={{ padding: '16px 20px' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: `${key.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: key.color }}>
-                          {key.icon}
+              {apiKeys.length === 0 && !showAddKey ? (
+                <div className="glass-card" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: '12px' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <KeyRound size={20} color="#7c3aed" />
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8' }}>No API keys added</div>
+                  <div style={{ fontSize: '12px', color: '#475569', maxWidth: '220px', lineHeight: 1.6 }}>
+                    Add your OpenAI, Anthropic, or Stability AI key to enable image generation and AI captions.
+                  </div>
+                  <button className="btn-primary" style={{ fontSize: '12px', padding: '9px 18px', marginTop: '4px' }} onClick={() => setShowAddKey(true)}>
+                    <Plus size={13} /> Add First Key
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {apiKeys.map((key, i) => (
+                    <motion.div
+                      key={key.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="glass-card"
+                      style={{ padding: '16px 20px' }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: `${key.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: key.color }}>
+                            {key.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{key.provider}</div>
+                            <div style={{ fontSize: '11px', color: '#475569' }}>{key.label}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{key.provider}</div>
-                          <div style={{ fontSize: '11px', color: '#475569' }}>{key.label}</div>
-                        </div>
+                        {statusBadge(key.status)}
                       </div>
-                      {statusBadge(key.status)}
-                    </div>
 
-                    {/* Key display */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(15,22,36,0.8)', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', border: '1px solid rgba(124,58,237,0.1)' }}>
-                      <code style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {showKeys[key.id] ? key.key : key.key.replace(/[^•]/g, '•').replace(/[•]+$/, '••••••••')}
-                      </code>
-                      <button onClick={() => toggleVisibility(key.id)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '2px' }}>
-                        {showKeys[key.id] ? <EyeOff size={13} /> : <Eye size={13} />}
-                      </button>
-                      <button onClick={() => handleCopy(key.id, key.key)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '2px' }}>
-                        {copiedId === key.id ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
-                      </button>
-                    </div>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Zap size={9} color="#7c3aed" /> Last used: {key.lastUsed || 'Never'}
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          className="btn-ghost"
-                          style={{ padding: '5px 10px', fontSize: '11px' }}
-                          onClick={() => handleTest(key.id)}
-                          id={`test-key-${key.id}`}
-                        >
-                          {testingId === key.id ? <><RefreshCw size={10} className="spin-slow" /> Testing...</> : <><Zap size={10} /> Test</>}
+                      {/* Key display */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(15,22,36,0.8)', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', border: '1px solid rgba(124,58,237,0.1)' }}>
+                        <code style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {showKeys[key.id] ? key.key : '••••••••••••••••••••••••••••••'}
+                        </code>
+                        <button onClick={() => toggleVisibility(key.id)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '2px' }}>
+                          {showKeys[key.id] ? <EyeOff size={13} /> : <Eye size={13} />}
                         </button>
-                        <button
-                          onClick={() => handleDeleteKey(key.id)}
-                          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '8px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                          id={`delete-key-${key.id}`}
-                        >
-                          <Trash2 size={11} />
+                        <button onClick={() => handleCopy(key.id, key.key)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '2px' }}>
+                          {copiedId === key.id ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
                         </button>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Zap size={9} color="#7c3aed" /> Last used: {key.lastUsed || 'Never'}
+                        </span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            className="btn-ghost"
+                            style={{ padding: '5px 10px', fontSize: '11px' }}
+                            onClick={() => handleTest(key.id)}
+                            id={`test-key-${key.id}`}
+                          >
+                            {testingId === key.id ? <><RefreshCw size={10} className="spin-slow" /> Testing...</> : <><Zap size={10} /> Test</>}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteKey(key.id)}
+                            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '8px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            id={`delete-key-${key.id}`}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </motion.div>
 
             {/* Social Accounts */}
@@ -262,40 +279,16 @@ export default function VaultPage() {
                         </div>
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>{account.platform}</div>
-                          <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {account.status === 'connected' ? (
-                              <span style={{ color: '#64748b' }}>{account.handle}</span>
-                            ) : (
-                              <span style={{ color: '#475569' }}>Not connected</span>
-                            )}
-                            {account.followers && account.followers !== '—' && (
-                              <><span>·</span><span style={{ color: '#7c3aed', fontWeight: 600 }}>{account.followers} followers</span></>
-                            )}
-                          </div>
+                          <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>Not connected</div>
                         </div>
                       </div>
                       {statusBadge(account.status)}
                     </div>
 
-                    <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
-                      {account.status === 'connected' ? (
-                        <>
-                          <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '12px', padding: '8px' }} id={`refresh-${account.id}`}>
-                            <RefreshCw size={11} /> Refresh Token
-                          </button>
-                          <button style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'Inter', sans-serif", fontWeight: 600 }} id={`disconnect-${account.id}`}>
-                            <Trash2 size={11} /> Disconnect
-                          </button>
-                        </>
-                      ) : account.status === 'expired' ? (
-                        <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', fontSize: '12px', padding: '8px' }} id={`reconnect-${account.id}`}>
-                          <RefreshCw size={11} /> Reconnect
-                        </button>
-                      ) : (
-                        <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', fontSize: '12px', padding: '8px' }} id={`connect-${account.id}`}>
-                          <ExternalLink size={11} /> Connect via OAuth
-                        </button>
-                      )}
+                    <div style={{ marginTop: '14px' }}>
+                      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }} id={`connect-${account.id}`}>
+                        <ExternalLink size={11} /> Connect via OAuth
+                      </button>
                     </div>
                   </motion.div>
                 ))}

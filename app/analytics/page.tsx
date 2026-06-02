@@ -4,42 +4,23 @@ import { motion } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import {
-  TrendingUp, Users, Eye, Heart, Share2, MessageCircle,
-  ArrowUpRight, ArrowDownRight,
-  BarChart2, Calendar,
+  TrendingUp, Users, Eye, Heart,
+  ArrowUpRight, BarChart2, Calendar, LineChart,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 
 const overallStats = [
-  { label: 'Total Impressions', value: '2.4M', change: '+18.3%', up: true, icon: Eye, color: '#7c3aed' },
-  { label: 'Total Reach', value: '142K', change: '+12.5%', up: true, icon: Users, color: '#06b6d4' },
-  { label: 'Engagement Rate', value: '4.8%', change: '+0.6%', up: true, icon: Heart, color: '#ec4899' },
-  { label: 'Click-Through Rate', value: '2.1%', change: '-0.3%', up: false, icon: TrendingUp, color: '#f59e0b' },
+  { label: 'Total Impressions', icon: Eye, color: '#7c3aed' },
+  { label: 'Total Reach', icon: Users, color: '#06b6d4' },
+  { label: 'Engagement Rate', icon: Heart, color: '#ec4899' },
+  { label: 'Click-Through Rate', icon: TrendingUp, color: '#f59e0b' },
 ];
 
-const platformStats = [
-  { platform: 'Facebook', icon: FacebookIcon, color: '#1877F2', reach: '54K', engagement: '3.2%', impressions: '820K', posts: 18, growth: '+8%' },
-  { platform: 'Instagram', icon: InstagramIcon, color: '#E1306C', reach: '62K', engagement: '6.8%', impressions: '1.1M', posts: 24, growth: '+22%' },
-  { platform: 'X (Twitter)', icon: XSocialIcon, color: '#ffffff', reach: '18K', engagement: '2.1%', impressions: '280K', posts: 31, growth: '+4%' },
-  { platform: 'LinkedIn', icon: LinkedinIcon, color: '#0A66C2', reach: '8K', engagement: '5.4%', impressions: '210K', posts: 12, growth: '+15%' },
-];
-
-const topCampaigns = [
-  { name: 'New Feature Reveal', platform: 'All', reach: '52K', engagement: '7.2%', status: 'top' },
-  { name: 'Summer Product Launch', platform: 'Instagram', reach: '24.5K', engagement: '5.9%', status: 'top' },
-  { name: 'Brand Awareness Q2', platform: 'Facebook', reach: '18.2K', engagement: '4.1%', status: 'normal' },
-  { name: 'Customer Stories', platform: 'LinkedIn', reach: '6.1K', engagement: '8.3%', status: 'top' },
-];
-
-// Fake bar data for weekly chart
-const weeklyData = [
-  { day: 'Mon', impressions: 62, reach: 38 },
-  { day: 'Tue', impressions: 45, reach: 28 },
-  { day: 'Wed', impressions: 78, reach: 52 },
-  { day: 'Thu', impressions: 91, reach: 64 },
-  { day: 'Fri', impressions: 55, reach: 40 },
-  { day: 'Sat', impressions: 38, reach: 22 },
-  { day: 'Sun', impressions: 29, reach: 18 },
+const platforms = [
+  { platform: 'Facebook', icon: FacebookIcon, color: '#1877F2' },
+  { platform: 'Instagram', icon: InstagramIcon, color: '#E1306C' },
+  { platform: 'X (Twitter)', icon: XSocialIcon, color: '#ffffff' },
+  { platform: 'LinkedIn', icon: LinkedinIcon, color: '#0A66C2' },
 ];
 
 export default function AnalyticsPage() {
@@ -95,21 +76,18 @@ export default function AnalyticsPage() {
                       <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${stat.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Icon size={16} color={stat.color} />
                       </div>
-                      <span className={stat.up ? 'badge badge-green' : 'badge badge-red'} style={{ fontSize: '10px', padding: '3px 8px' }}>
-                        {stat.up ? <ArrowUpRight size={9} /> : <ArrowDownRight size={9} />} {stat.change}
-                      </span>
                     </div>
-                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#f1f5f9', fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.5px' }}>{stat.value}</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#475569', fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.5px' }}>—</div>
                     <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', fontWeight: 500 }}>{stat.label}</div>
                   </motion.div>
                 );
               })}
             </div>
 
-            {/* Weekly Chart + Platform Table */}
+            {/* Chart Area + Top Campaigns */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', marginBottom: '24px' }}>
 
-              {/* Bar Chart */}
+              {/* Chart placeholder */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -120,47 +98,18 @@ export default function AnalyticsPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <div>
                     <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>Weekly Performance</h2>
-                    <p style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Impressions vs. Reach (in thousands)</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '11px', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#7c3aed' }} /> Impressions
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#06b6d4', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#06b6d4' }} /> Reach
-                    </span>
+                    <p style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Impressions vs. Reach over time</p>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '180px' }}>
-                  {weeklyData.map((day, i) => (
-                    <motion.div
-                      key={day.day}
-                      initial={{ height: 0 }}
-                      animate={{ height: 'auto' }}
-                      transition={{ delay: i * 0.08, duration: 0.5 }}
-                      style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}
-                    >
-                      <div style={{ width: '100%', display: 'flex', gap: '3px', alignItems: 'flex-end', flex: 1, justifyContent: 'center' }}>
-                        <motion.div
-                          initial={{ scaleY: 0 }}
-                          animate={{ scaleY: 1 }}
-                          transition={{ delay: i * 0.08 + 0.2, duration: 0.5 }}
-                          style={{ width: '12px', height: `${day.impressions}%`, background: 'linear-gradient(to top, #7c3aed, rgba(124,58,237,0.4))', borderRadius: '4px 4px 0 0', transformOrigin: 'bottom', minHeight: '4px' }}
-                        />
-                        <motion.div
-                          initial={{ scaleY: 0 }}
-                          animate={{ scaleY: 1 }}
-                          transition={{ delay: i * 0.08 + 0.3, duration: 0.5 }}
-                          style={{ width: '12px', height: `${day.reach}%`, background: 'linear-gradient(to top, #06b6d4, rgba(6,182,212,0.4))', borderRadius: '4px 4px 0 0', transformOrigin: 'bottom', minHeight: '4px' }}
-                        />
-                      </div>
-                      <span style={{ fontSize: '10px', color: '#475569', fontWeight: 600 }}>{day.day}</span>
-                    </motion.div>
-                  ))}
+                <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', borderRadius: '12px', border: '1px dashed rgba(124,58,237,0.15)', background: 'rgba(124,58,237,0.03)' }}>
+                  <LineChart size={28} color="rgba(124,58,237,0.3)" />
+                  <p style={{ fontSize: '13px', color: '#475569', textAlign: 'center', maxWidth: '220px', lineHeight: 1.6 }}>
+                    Chart will appear once you publish campaigns and connect your social accounts.
+                  </p>
                 </div>
               </motion.div>
 
-              {/* Top Campaigns */}
+              {/* Top Campaigns placeholder */}
               <motion.div
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -171,33 +120,12 @@ export default function AnalyticsPage() {
                 <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <BarChart2 size={14} color="#7c3aed" /> Top Campaigns
                 </h2>
-                {topCampaigns.map((c, i) => (
-                  <motion.div
-                    key={c.name}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 + 0.4 }}
-                    style={{ marginBottom: '14px', paddingBottom: '14px', borderBottom: i < topCampaigns.length - 1 ? '1px solid rgba(124,58,237,0.07)' : 'none' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0' }}>{c.name}</div>
-                        <div style={{ fontSize: '10px', color: '#475569', marginTop: '2px' }}>{c.platform}</div>
-                      </div>
-                      {c.status === 'top' && <span className="badge badge-violet" style={{ fontSize: '9px' }}>🏆 Top</span>}
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#a78bfa' }}>{c.reach}</div>
-                        <div style={{ fontSize: '9px', color: '#475569' }}>Reach</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#34d399' }}>{c.engagement}</div>
-                        <div style={{ fontSize: '9px', color: '#475569' }}>Engagement</div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', gap: '10px' }}>
+                  <BarChart2 size={24} color="rgba(124,58,237,0.25)" />
+                  <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', lineHeight: 1.6 }}>
+                    Top performing campaigns will appear here after publishing.
+                  </p>
+                </div>
               </motion.div>
             </div>
 
@@ -223,7 +151,7 @@ export default function AnalyticsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {platformStats.map((p, i) => {
+                    {platforms.map((p, i) => {
                       const Icon = p.icon;
                       return (
                         <motion.tr
@@ -231,8 +159,7 @@ export default function AnalyticsPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: i * 0.1 + 0.5 }}
-                          style={{ borderBottom: i < platformStats.length - 1 ? '1px solid rgba(124,58,237,0.06)' : 'none', cursor: 'pointer' }}
-                          whileHover={{ backgroundColor: 'rgba(124,58,237,0.04)' }}
+                          style={{ borderBottom: i < platforms.length - 1 ? '1px solid rgba(124,58,237,0.06)' : 'none' }}
                         >
                           <td style={{ padding: '14px 20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -242,15 +169,9 @@ export default function AnalyticsPage() {
                               <span style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>{p.platform}</span>
                             </div>
                           </td>
-                          <td style={{ padding: '14px 20px', fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>{p.posts}</td>
-                          <td style={{ padding: '14px 20px', fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>{p.impressions}</td>
-                          <td style={{ padding: '14px 20px', fontSize: '13px', color: '#a78bfa', fontWeight: 700 }}>{p.reach}</td>
-                          <td style={{ padding: '14px 20px' }}>
-                            <span className="badge badge-green" style={{ fontSize: '10px' }}>{p.engagement}</span>
-                          </td>
-                          <td style={{ padding: '14px 20px' }}>
-                            <span className="badge badge-cyan" style={{ fontSize: '10px' }}><ArrowUpRight size={8} /> {p.growth}</span>
-                          </td>
+                          {['—', '—', '—', '—', '—'].map((val, vi) => (
+                            <td key={vi} style={{ padding: '14px 20px', fontSize: '13px', color: '#475569', fontWeight: 500 }}>{val}</td>
+                          ))}
                         </motion.tr>
                       );
                     })}

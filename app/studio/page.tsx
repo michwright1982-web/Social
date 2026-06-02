@@ -11,15 +11,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-const VARIATION_IMAGES = [
-  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=500&fit=crop',
-  'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=600&fit=crop',
-  'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=400&h=450&fit=crop',
-  'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400&h=520&fit=crop',
-  'https://images.unsplash.com/photo-1572044162444-ad60f128bdea?w=400&h=480&fit=crop',
-  'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop',
-];
-
 const AI_MODELS = [
   { id: 'dalle3', label: 'DALL-E 3', provider: 'OpenAI', badge: 'Recommended' },
   { id: 'sdxl', label: 'Stable Diffusion XL', provider: 'Stability AI', badge: 'ControlNet' },
@@ -28,7 +19,10 @@ const AI_MODELS = [
 
 const STYLES = ['Photorealistic', 'Cinematic', 'Editorial', 'Minimalist', 'Bold & Vibrant', 'Luxury'];
 
-type GenerationState = 'idle' | 'uploading' | 'generating' | 'done';
+type GenerationState = 'idle' | 'generating' | 'done';
+
+// Placeholder generated images — replace with real AI output in production
+const GENERATED_IMAGES: string[] = [];
 
 export default function StudioPage() {
   const [prompt, setPrompt] = useState('');
@@ -60,6 +54,7 @@ export default function StudioPage() {
     setProgress(0);
     setSelectedVariation(null);
 
+    // Simulated progress — wire to real AI API
     const interval = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
@@ -345,15 +340,18 @@ export default function StudioPage() {
                           <Check size={9} /> Done
                         </span>
                       </h2>
-                      <p style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>Click a variation to select it, then proceed to the editor</p>
+                      <p style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                        Connect your AI provider in the Vault to see real generated images here.
+                      </p>
                     </div>
                     <button className="btn-ghost" onClick={handleReset} style={{ fontSize: '12px', padding: '8px 14px' }}>
                       <RotateCcw size={12} /> Regenerate
                     </button>
                   </div>
 
+                  {/* Empty variation slots */}
                   <div className="masonry-grid">
-                    {VARIATION_IMAGES.slice(0, numVariations).map((src, i) => (
+                    {Array.from({ length: numVariations }).map((_, i) => (
                       <motion.div
                         key={i}
                         className="masonry-item"
@@ -363,50 +361,21 @@ export default function StudioPage() {
                       >
                         <div
                           id={`variation-${i}`}
+                          onClick={() => setSelectedVariation(i === selectedVariation ? null : i)}
                           style={{
                             position: 'relative', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
-                            border: selectedVariation === i ? '2px solid #7c3aed' : '2px solid transparent',
+                            border: selectedVariation === i ? '2px solid #7c3aed' : '2px solid rgba(124,58,237,0.15)',
                             transition: 'all 0.3s',
                             boxShadow: selectedVariation === i ? '0 0 0 4px rgba(124,58,237,0.2)' : 'none',
+                            height: `${220 + (i % 3) * 60}px`,
+                            background: 'rgba(124,58,237,0.05)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px',
                           }}
-                          onClick={() => setSelectedVariation(i === selectedVariation ? null : i)}
                         >
-                          <img src={src} alt={`Variation ${i + 1}`} style={{ width: '100%', display: 'block', borderRadius: '14px' }} />
+                          <ImageIcon size={24} color="rgba(124,58,237,0.25)" />
+                          <span style={{ fontSize: '11px', color: '#475569' }}>Variation {i + 1}</span>
+                          <span className="badge badge-violet" style={{ fontSize: '9px', position: 'absolute', bottom: '10px', left: '10px' }}>V{i + 1}</span>
 
-                          {/* Hover overlay */}
-                          <div className="variation-overlay" style={{
-                            position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                            transition: 'background 0.3s',
-                            borderRadius: '14px',
-                          }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,0,0,0.55)'; Array.from((e.currentTarget as HTMLDivElement).querySelectorAll('.overlay-btn')).forEach(b => (b as HTMLElement).style.opacity = '1'); }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,0,0,0)'; Array.from((e.currentTarget as HTMLDivElement).querySelectorAll('.overlay-btn')).forEach(b => (b as HTMLElement).style.opacity = '0'); }}
-                          >
-                            {[
-                              { label: 'Select', icon: <Check size={11} />, primary: true },
-                              { label: 'Vary', icon: <RefreshCw size={11} />, primary: false },
-                              { label: 'Expand', icon: <Maximize2 size={11} />, primary: false },
-                            ].map(action => (
-                              <button
-                                key={action.label}
-                                className="overlay-btn"
-                                onClick={e => { e.stopPropagation(); if (action.label === 'Select') setSelectedVariation(i); }}
-                                style={{
-                                  padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 600,
-                                  cursor: 'pointer', border: 'none', fontFamily: "'Inter', sans-serif",
-                                  background: action.primary ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,0.15)',
-                                  color: 'white', display: 'flex', alignItems: 'center', gap: '4px',
-                                  opacity: 0, transition: 'opacity 0.2s',
-                                  backdropFilter: 'blur(8px)',
-                                }}
-                              >
-                                {action.icon} {action.label}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Selected checkmark */}
                           {selectedVariation === i && (
                             <motion.div
                               initial={{ scale: 0 }}
@@ -421,11 +390,6 @@ export default function StudioPage() {
                               <Check size={14} color="white" />
                             </motion.div>
                           )}
-
-                          {/* Variation number */}
-                          <div style={{ position: 'absolute', bottom: '10px', left: '10px' }}>
-                            <span className="badge badge-violet" style={{ fontSize: '9px', backdropFilter: 'blur(8px)' }}>V{i + 1}</span>
-                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -441,7 +405,9 @@ export default function StudioPage() {
                         style={{ position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}
                       >
                         <div className="glass-card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-                          <img src={VARIATION_IMAGES[selectedVariation]} alt="selected" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ImageIcon size={16} color="#7c3aed" />
+                          </div>
                           <div>
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>Variation {selectedVariation + 1} selected</div>
                             <div style={{ fontSize: '11px', color: '#64748b' }}>Ready to generate captions & publish</div>
