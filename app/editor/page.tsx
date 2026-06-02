@@ -80,8 +80,13 @@ export default function EditorPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setLocalImages(prev => prev.length < 5 ? [...prev, url] : prev);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setLocalImages(prev => prev.length < 5 ? [...prev, event.target.result as string] : prev);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 

@@ -28,9 +28,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No active OpenAI key found. Please configure it in the Vault to generate AI captions.' }, { status: 401 });
     }
 
-    let actualBase64 = imageBase64;
-    if (actualBase64.startsWith('data:image')) {
-      actualBase64 = actualBase64.split(',')[1];
+    let imageUrl = imageBase64;
+    // If it's a raw base64 string without data prefix, add default jpeg prefix
+    if (!imageUrl.startsWith('http') && !imageUrl.startsWith('data:image')) {
+      imageUrl = `data:image/jpeg;base64,${imageUrl}`;
     }
 
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -58,7 +59,7 @@ Keep X (Twitter) under 280 chars. Use emojis and relevant hashtags.`
             role: 'user',
             content: [
               { type: 'text', text: 'Generate the captions for this image.' },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${actualBase64}` } }
+              { type: 'image_url', image_url: { url: imageUrl } }
             ]
           }
         ],
