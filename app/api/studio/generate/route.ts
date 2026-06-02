@@ -9,7 +9,7 @@ interface ApiKey {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { prompt: string; provider: string; model?: string; style?: string; ratio?: string };
+  let body: { prompt: string; provider: string; model?: string; style?: string; ratio?: string; variations?: number };
   try {
     body = await req.json();
   } catch {
