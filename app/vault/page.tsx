@@ -392,7 +392,7 @@ function VaultContent() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <select className="input-field" style={{ fontSize: '13px' }} value={newProvider} onChange={e => setNewProvider(e.target.value)} id="new-provider-select">
                         <option value="" style={{ background: '#0d1120' }}>Select Provider</option>
-                        {['Google AI Studio', 'OpenAI', 'Anthropic', 'Stability AI', 'Midjourney', 'Replicate', 'Custom'].map(p => (
+                        {['Google AI Studio', 'OpenAI', 'Stability AI', 'Midjourney'].map(p => (
                           <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>
                         ))}
                       </select>
@@ -417,7 +417,7 @@ function VaultContent() {
                   </div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8' }}>No API keys added</div>
                   <div style={{ fontSize: '12px', color: '#475569', maxWidth: '220px', lineHeight: 1.6 }}>
-                    Add your OpenAI, Anthropic, or Stability AI key to enable image generation and AI captions.
+                    Add your Google AI Studio, OpenAI, or Stability AI key to enable dynamic image generation.
                   </div>
                   <button className="btn-primary" style={{ fontSize: '12px', padding: '9px 18px', marginTop: '4px' }} onClick={() => setShowAddKey(true)}>
                     <Plus size={13} /> Add First Key
