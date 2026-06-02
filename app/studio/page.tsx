@@ -147,7 +147,11 @@ export default function StudioPage() {
 
         setGeneratedImages(prev => {
           const updated = [...newHistoryItems, ...prev].slice(0, 20);
-          localStorage.setItem('creative_studio_history', JSON.stringify(updated));
+          try {
+            localStorage.setItem('creative_studio_history', JSON.stringify(updated));
+          } catch (e) {
+            console.warn('Failed to save to localStorage', e);
+          }
           return updated;
         });
         
@@ -174,7 +178,11 @@ export default function StudioPage() {
     e.stopPropagation();
     setGeneratedImages(prev => {
       const updated = prev.filter(img => img.id !== id);
-      localStorage.setItem('creative_studio_history', JSON.stringify(updated));
+      try {
+        localStorage.setItem('creative_studio_history', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to update localStorage', e);
+      }
       return updated;
     });
     setSelectedVariations(prev => prev.filter(vid => vid !== id));
@@ -352,7 +360,11 @@ export default function StudioPage() {
                                   .map(id => generatedImages.find(img => img.id === id)?.url)
                                   .filter(Boolean) as string[];
                                 if (selectedUrls.length > 0) {
-                                  localStorage.setItem('creative_studio_selected_images', JSON.stringify(selectedUrls));
+                                  try {
+                                    localStorage.setItem('creative_studio_selected_images', JSON.stringify(selectedUrls));
+                                  } catch (e) {
+                                    console.warn('Failed to save selected images to localStorage', e);
+                                  }
                                 }
                                 router.push('/editor');
                               }}
