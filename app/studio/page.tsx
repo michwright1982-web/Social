@@ -292,12 +292,12 @@ export default function StudioPage() {
                             border: selectedVariations.includes(img.id) ? '2px solid #7c3aed' : '2px solid rgba(124,58,237,0.15)',
                             transition: 'all 0.3s',
                             boxShadow: selectedVariations.includes(img.id) ? '0 0 0 4px rgba(124,58,237,0.2)' : 'none',
-                            height: `${220 + (i % 3) * 60}px`,
+                            height: 'auto',
                             background: 'rgba(124,58,237,0.05)',
                           }}
                         >
-                          <img src={img.url} alt={`Generated item`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%)', opacity: selectedVariations.includes(img.id) ? 1 : 0.6, transition: '0.3s' }} />
+                          <img src={img.url} alt={`Generated item`} style={{ width: '100%', height: 'auto', display: 'block' }} />
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(124,58,237,0.2)', opacity: selectedVariations.includes(img.id) ? 1 : 0, transition: '0.3s', pointerEvents: 'none' }} />
                           
                           <button 
                             onClick={(e) => handleDelete(img.id, e)}
