@@ -15,11 +15,22 @@ export async function POST(req: NextRequest) {
     }
 
     let keys: any[] = [];
+    let brandContext = '';
+    
     try {
       const decrypted = await decryptToken(rawCookie);
       keys = JSON.parse(decrypted);
     } catch {
       return NextResponse.json({ error: 'Failed to decrypt API keys' }, { status: 500 });
+    }
+
+    const brandCookie = req.cookies.get('ai_brand_context')?.value;
+    if (brandCookie) {
+      try {
+        brandContext = await decryptToken(brandCookie);
+      } catch (err) {
+        console.warn('Failed to decrypt brand context cookie');
+      }
     }
 
     const providerKey = keys.find(k => k.provider === 'OpenAI' && k.status === 'active')?.key || keys.find(k => k.provider === 'OpenAI')?.key;
@@ -46,6 +57,7 @@ export async function POST(req: NextRequest) {
           {
             role: 'system',
             content: `You are an expert social media manager. You will be provided with an image. Write 4 distinct, highly engaging social media captions optimized for the provided image.
+${brandContext ? `\nCRITICAL BRAND GUIDELINES:\n${brandContext}\nEnsure all captions strictly follow this brand context, tone, and product description.\n` : ''}
 Return ONLY a valid JSON object matching this exact format:
 {
   "facebook": "...",
