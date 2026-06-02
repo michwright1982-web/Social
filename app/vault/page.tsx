@@ -9,7 +9,7 @@ import {
   KeyRound, Eye, EyeOff, Plus, Trash2, CheckCircle2,
   AlertCircle, Lock, Shield,
   Zap, ExternalLink, RefreshCw, Copy, Check,
-  Server, Brain, Image as ImageIcon, Loader2,
+  Server, Brain, Image as ImageIcon, Loader2, Sparkles,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 
@@ -42,6 +42,18 @@ const SOCIAL_PLATFORMS = [
   { id: 'linkedin', label: 'LinkedIn',  color: '#0A66C2', icon: <LinkedinIcon  size={18} /> },
 ];
 
+// ─── AI Provider config ───────────────────────────────────────────────────────
+
+const PROVIDER_CONFIG: Record<string, { color: string; icon: React.ReactNode; hint: string }> = {
+  'Google AI Studio': { color: '#4285F4', icon: <Sparkles size={16} />, hint: 'AIza...' },
+  'OpenAI':           { color: '#10b981', icon: <Brain     size={16} />, hint: 'sk-proj-...' },
+  'Anthropic':        { color: '#f59e0b', icon: <Brain     size={16} />, hint: 'sk-ant-...' },
+  'Stability AI':     { color: '#8b5cf6', icon: <ImageIcon size={16} />, hint: 'sk-...' },
+  'Midjourney':       { color: '#ec4899', icon: <ImageIcon size={16} />, hint: 'Paste your key' },
+  'Replicate':        { color: '#06b6d4', icon: <Server    size={16} />, hint: 'r8_...' },
+  'Custom':           { color: '#7c3aed', icon: <Server    size={16} />, hint: 'Paste your key' },
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function VaultContent() {
@@ -56,6 +68,7 @@ function VaultContent() {
   const [newLabel, setNewLabel]       = useState('');
   const [copiedId, setCopiedId]       = useState<string | null>(null);
   const [testingId, setTestingId]     = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { valid: boolean; message: string }>>({});
 
   // ── Social OAuth state ─────────────────────────────────────────────────────
   const [socialStatuses, setSocialStatuses] = useState<SocialStatuses>({});
@@ -151,27 +164,42 @@ function VaultContent() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleTest = (id: string) => {
-    setTestingId(id);
-    setTimeout(() => setTestingId(null), 2000);
+  const handleTest = async (keyEntry: ApiKey) => {
+    setTestingId(keyEntry.id);
+    setTestResults(prev => ({ ...prev, [keyEntry.id]: { valid: false, message: '' } }));
+    try {
+      const res  = await fetch('/api/keys/test', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ provider: keyEntry.provider, key: keyEntry.key }),
+      });
+      const data = (await res.json()) as { valid: boolean; message: string };
+      setTestResults(prev => ({ ...prev, [keyEntry.id]: data }));
+      // Update the key's status based on test result
+      setApiKeys(prev => prev.map(k =>
+        k.id === keyEntry.id ? { ...k, status: data.valid ? 'active' : 'invalid' } : k
+      ));
+      showToast(data.message, data.valid ? 'success' : 'error');
+    } catch {
+      showToast('Network error during key test', 'error');
+    } finally {
+      setTestingId(null);
+    }
   };
 
   const handleDeleteKey = (id: string) => setApiKeys(prev => prev.filter(k => k.id !== id));
 
   const handleAddKey = () => {
     if (!newProvider || !newKey) return;
+    const config = PROVIDER_CONFIG[newProvider] ?? PROVIDER_CONFIG['Custom'];
     const key: ApiKey = {
       id:       Date.now().toString(),
       provider: newProvider,
       label:    newLabel || newProvider,
       key:      newKey,
       status:   'untested',
-      color:    '#7c3aed',
-      icon:     newProvider === 'OpenAI' || newProvider === 'Anthropic'
-        ? <Brain size={16} />
-        : newProvider === 'Stability AI' || newProvider === 'Midjourney'
-          ? <ImageIcon size={16} />
-          : <Server size={16} />,
+      color:    config.color,
+      icon:     config.icon,
     };
     setApiKeys(prev => [...prev, key]);
     setNewProvider(''); setNewKey(''); setNewLabel('');
@@ -278,12 +306,12 @@ function VaultContent() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <select className="input-field" style={{ fontSize: '13px' }} value={newProvider} onChange={e => setNewProvider(e.target.value)} id="new-provider-select">
                         <option value="" style={{ background: '#0d1120' }}>Select Provider</option>
-                        {['OpenAI', 'Anthropic', 'Stability AI', 'Midjourney', 'Replicate', 'Custom'].map(p => (
+                        {['Google AI Studio', 'OpenAI', 'Anthropic', 'Stability AI', 'Midjourney', 'Replicate', 'Custom'].map(p => (
                           <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>
                         ))}
                       </select>
                       <input className="input-field" placeholder="Label (e.g. GPT-4o Production)" value={newLabel} onChange={e => setNewLabel(e.target.value)} style={{ fontSize: '13px' }} id="new-key-label" />
-                      <input className="input-field" type="password" placeholder="API Key (e.g. sk-...)" value={newKey} onChange={e => setNewKey(e.target.value)} style={{ fontSize: '13px', fontFamily: 'monospace' }} id="new-key-input" />
+                      <input className="input-field" type="password" placeholder={newProvider ? `API Key (e.g. ${PROVIDER_CONFIG[newProvider]?.hint ?? 'Paste your key'})` : 'API Key'} value={newKey} onChange={e => setNewKey(e.target.value)} style={{ fontSize: '13px', fontFamily: 'monospace' }} id="new-key-input" />
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '10px' }} onClick={handleAddKey} id="save-key-btn">
                           <Lock size={13} /> Save Encrypted
@@ -350,7 +378,7 @@ function VaultContent() {
                           <Zap size={9} color="#7c3aed" /> Last used: {key.lastUsed || 'Never'}
                         </span>
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button className="btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }} onClick={() => handleTest(key.id)} id={`test-key-${key.id}`}>
+                          <button className="btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }} onClick={() => handleTest(key)} disabled={testingId === key.id} id={`test-key-${key.id}`}>
                             {testingId === key.id ? <><RefreshCw size={10} className="spin-slow" /> Testing...</> : <><Zap size={10} /> Test</>}
                           </button>
                           <button onClick={() => handleDeleteKey(key.id)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '8px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} id={`delete-key-${key.id}`}>
