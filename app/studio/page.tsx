@@ -8,7 +8,7 @@ import Topbar from '@/components/Topbar';
 import {
   Upload, Wand2, Sparkles, ChevronDown, Zap, RefreshCw,
   Check, Maximize2, RotateCcw, Image as ImageIcon, X,
-  Sliders, Globe, Languages, ArrowRight, Loader2, AlertCircle, Trash2
+  Sliders, Globe, Languages, ArrowRight, Loader2, AlertCircle, Trash2, Send
 } from 'lucide-react';
 import Link from 'next/link';
 
