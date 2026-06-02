@@ -82,8 +82,9 @@ export default function EditorPage() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (event.target?.result) {
-          setLocalImages(prev => prev.length < 5 ? [...prev, event.target.result as string] : prev);
+        const result = event.target?.result;
+        if (result) {
+          setLocalImages(prev => prev.length < 5 ? [...prev, result as string] : prev);
         }
       };
       reader.readAsDataURL(file);
