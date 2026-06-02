@@ -88,8 +88,7 @@ export async function POST(req: NextRequest) {
           model: 'dall-e-3',
           prompt: enhancedPrompt,
           n: 1,
-          size: '1024x1024',
-          response_format: 'url'
+          size: '1024x1024'
         })
       });
 
