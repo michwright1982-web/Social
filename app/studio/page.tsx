@@ -7,15 +7,19 @@ import Topbar from '@/components/Topbar';
 import {
   Upload, Wand2, Sparkles, ChevronDown, Zap, RefreshCw,
   Check, Maximize2, RotateCcw, Image as ImageIcon, X,
-  Sliders, Globe, Languages, ArrowRight,
+  Sliders, Globe, Languages, ArrowRight, Loader2
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect } from 'react';
 
 const AI_MODELS = [
-  { id: 'imagen3', label: 'Imagen 3', provider: 'Google AI Studio', badge: 'Ultra-real' },
   { id: 'dalle3', label: 'DALL-E 3', provider: 'OpenAI', badge: 'Recommended' },
+  { id: 'dalle2', label: 'DALL-E 2', provider: 'OpenAI', badge: 'Fast' },
+  { id: 'imagen3', label: 'Imagen 3', provider: 'Google AI Studio', badge: 'Ultra-real' },
+  { id: 'imagen2', label: 'Imagen 2', provider: 'Google AI Studio', badge: 'Fast' },
   { id: 'sdxl', label: 'Stable Diffusion XL', provider: 'Stability AI', badge: 'ControlNet' },
-  { id: 'midjourney', label: 'Midjourney v6', provider: 'Midjourney', badge: 'Creative' },
+  { id: 'sd3', label: 'Stable Diffusion 3', provider: 'Stability AI', badge: 'New' },
+  { id: 'midjourney6', label: 'Midjourney v6', provider: 'Midjourney', badge: 'Creative' },
 ];
 
 const STYLES = ['Photorealistic', 'Cinematic', 'Editorial', 'Minimalist', 'Bold & Vibrant', 'Luxury'];
@@ -27,6 +31,7 @@ const GENERATED_IMAGES: string[] = [];
 
 export default function StudioPage() {
   const [prompt, setPrompt] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('OpenAI');
   const [selectedModel, setSelectedModel] = useState('dalle3');
   const [selectedStyle, setSelectedStyle] = useState('Photorealistic');
   const [numVariations, setNumVariations] = useState(6);
@@ -39,6 +44,34 @@ export default function StudioPage() {
   const [language, setLanguage] = useState('English');
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
+  const [availableProviders, setAvailableProviders] = useState<string[]>([]);
+  const [isLoadingKeys, setIsLoadingKeys] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/keys')
+      .then(res => res.json())
+      .then(keys => {
+        const providers = Array.from(new Set(keys.map((k: any) => k.provider))) as string[];
+        const supported = providers.filter(p => AI_MODELS.some(m => m.provider === p));
+        setAvailableProviders(supported);
+        if (supported.length > 0) {
+          setSelectedProvider(supported[0]);
+          const firstModel = AI_MODELS.find(m => m.provider === supported[0]);
+          if (firstModel) setSelectedModel(firstModel.id);
+        }
+        setIsLoadingKeys(false);
+      })
+      .catch(() => setIsLoadingKeys(false));
+  }, []);
+
+  const handleProviderChange = (provider: string) => {
+    setSelectedProvider(provider);
+    const firstModel = AI_MODELS.find(m => m.provider === provider);
+    if (firstModel) setSelectedModel(firstModel.id);
+  };
+
+  const filteredModels = AI_MODELS.filter(m => m.provider === selectedProvider);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -201,13 +234,44 @@ export default function StudioPage() {
                 </div>
               </div>
 
-              {/* AI Model */}
+              {/* AI Provider & Model */}
               <div className="glass-card" style={{ padding: '20px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  AI Provider
+                </label>
+                {isLoadingKeys ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(15,22,36,0.5)', borderRadius: '10px', marginBottom: '16px', fontSize: '13px', color: '#64748b' }}>
+                    <Loader2 size={14} className="spin-slow" /> Loading providers...
+                  </div>
+                ) : availableProviders.length === 0 ? (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '12px', color: '#f87171', marginBottom: '8px' }}>
+                      No AI providers configured.
+                    </div>
+                    <Link href="/vault" style={{ textDecoration: 'none' }}>
+                      <button className="btn-secondary" style={{ width: '100%', fontSize: '12px', padding: '8px' }}>
+                        Go to Vault to configure
+                      </button>
+                    </Link>
+                  </div>
+                ) : (
+                  <select 
+                    className="input-field" 
+                    value={selectedProvider} 
+                    onChange={(e) => handleProviderChange(e.target.value)}
+                    style={{ width: '100%', marginBottom: '16px', padding: '10px 14px', fontSize: '13px' }}
+                  >
+                    {availableProviders.map(p => (
+                      <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>
+                    ))}
+                  </select>
+                )}
+
                 <label style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   AI Model
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {AI_MODELS.map(model => (
+                  {filteredModels.map(model => (
                     <div
                       key={model.id}
                       onClick={() => setSelectedModel(model.id)}
@@ -297,7 +361,7 @@ export default function StudioPage() {
                 className="btn-primary"
                 style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '15px' }}
                 onClick={handleGenerate}
-                disabled={state === 'generating' || !prompt.trim()}
+                disabled={state === 'generating' || !prompt.trim() || availableProviders.length === 0}
                 whileTap={{ scale: 0.98 }}
                 id="generate-btn"
               >

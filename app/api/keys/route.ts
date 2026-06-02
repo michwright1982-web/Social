@@ -44,10 +44,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const payload = JSON.stringify(keys);
-  const encrypted = await encryptToken(payload);
+  try {
+    const payload = JSON.stringify(keys);
+    const encrypted = await encryptToken(payload);
 
-  const response = NextResponse.json({ success: true });
-  response.cookies.set(AI_KEYS_COOKIE, encrypted, COOKIE_OPTIONS);
-  return response;
+    const response = NextResponse.json({ success: true });
+    response.cookies.set(AI_KEYS_COOKIE, encrypted, COOKIE_OPTIONS);
+    return response;
+  } catch (error) {
+    console.error('Failed to save API keys:', error);
+    return NextResponse.json({ error: 'Failed to encrypt or save keys' }, { status: 500 });
+  }
 }

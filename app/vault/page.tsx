@@ -12,6 +12,7 @@ import {
   Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
+import Link from 'next/link';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -542,22 +543,24 @@ function VaultContent() {
                           ) : status.connected ? (
                             <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>
                           ) : (
-                            <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Disconnected</span>
+                            <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Not Connected</span>
                           )}
-                          <button 
-                            className="btn-ghost" 
-                            style={{ padding: '6px' }}
-                            onClick={() => {
-                              if (editingCredsPlatform === platform.id) {
-                                setEditingCredsPlatform(null);
-                              } else {
-                                setEditingCredsPlatform(platform.id);
-                                setCredsForm({ clientId: creds?.clientId || '', clientSecret: '' });
-                              }
-                            }}
-                          >
-                            <Settings size={14} />
-                          </button>
+                          {hasCreds && (
+                            <button 
+                              className="btn-ghost" 
+                              style={{ padding: '6px' }}
+                              onClick={() => {
+                                if (editingCredsPlatform === platform.id) {
+                                  setEditingCredsPlatform(null);
+                                } else {
+                                  setEditingCredsPlatform(platform.id);
+                                  setCredsForm({ clientId: creds?.clientId || '', clientSecret: '' });
+                                }
+                              }}
+                            >
+                              <Settings size={14} />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -573,7 +576,7 @@ function VaultContent() {
                             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(124,58,237,0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
                                 Configure {platform.label} App
-                                <a href="#" style={{ color: '#06b6d4', textDecoration: 'none', fontWeight: 500 }}>Setup Guide ↗</a>
+                                <Link href={`/setup-guide?platform=${platform.id}`} style={{ color: '#06b6d4', textDecoration: 'none', fontWeight: 500 }}>Setup Guide ↗</Link>
                               </div>
                               <input 
                                 className="input-field" 
@@ -607,44 +610,41 @@ function VaultContent() {
 
                       {/* Action buttons */}
                       <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
-                        {status.connected ? (
-                          <>
-                            {/* Reconnect = just re-run the OAuth flow */}
-                            <a
-                              href={`/api/auth/${platform.id}/connect`}
-                              style={{ flex: 1, textDecoration: 'none' }}
-                              id={`reconnect-${platform.id}`}
-                            >
-                              <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }}>
-                                <RefreshCw size={11} /> Refresh Token
-                              </button>
-                            </a>
-                            <button
-                              onClick={() => handleDisconnect(platform.id)}
-                              disabled={isDisconnecting}
-                              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '10px', padding: '8px 14px', cursor: isDisconnecting ? 'not-allowed' : 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'Inter', sans-serif", fontWeight: 600, opacity: isDisconnecting ? 0.6 : 1 }}
-                              id={`disconnect-${platform.id}`}
-                            >
-                              {isDisconnecting ? <Loader2 size={11} className="spin-slow" /> : <Trash2 size={11} />}
-                              {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
-                            </button>
-                          </>
+                        {!hasCreds ? (
+                          <button 
+                            className="btn-primary" 
+                            style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }}
+                            onClick={() => {
+                              if (editingCredsPlatform === platform.id) {
+                                setEditingCredsPlatform(null);
+                              } else {
+                                setEditingCredsPlatform(platform.id);
+                                setCredsForm({ clientId: '', clientSecret: '' });
+                              }
+                            }}
+                          >
+                            <Settings size={11} /> Configure App
+                          </button>
+                        ) : status.connected ? (
+                          <button
+                            onClick={() => handleDisconnect(platform.id)}
+                            disabled={isDisconnecting}
+                            className="btn-primary"
+                            style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
+                            id={`disconnect-${platform.id}`}
+                          >
+                            {isDisconnecting ? <Loader2 size={11} className="spin-slow" /> : <Trash2 size={11} />}
+                            {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                          </button>
                         ) : (
                           /* Full-page redirect — no JS fetch needed */
                           <a
-                            href={hasCreds ? `/api/auth/${platform.id}/connect` : '#'}
-                            onClick={e => {
-                              if (!hasCreds) {
-                                e.preventDefault();
-                                setEditingCredsPlatform(platform.id);
-                                showToast('Please configure Developer App credentials first', 'error');
-                              }
-                            }}
+                            href={`/api/auth/${platform.id}/connect`}
                             style={{ flex: 1, textDecoration: 'none' }}
                             id={`connect-${platform.id}`}
                           >
-                            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px', opacity: hasCreds ? 1 : 0.5 }} disabled={!hasCreds}>
-                              <ExternalLink size={11} /> {hasCreds ? 'Connect via OAuth' : 'Configure App to Connect'}
+                            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }}>
+                              <ExternalLink size={11} /> Connect via OAuth
                             </button>
                           </a>
                         )}

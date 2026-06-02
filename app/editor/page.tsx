@@ -8,9 +8,10 @@ import {
   Send, Check,
   Copy, RefreshCw, Sparkles, AlertCircle, CheckCircle2,
   Loader2, Hash, AtSign,
-  Clock, Zap, Globe, ImageIcon,
+  Clock, Zap, Globe, ImageIcon, Upload,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
+import Link from 'next/link';
 
 const platforms = [
   {
@@ -54,6 +55,38 @@ export default function EditorPage() {
   const [isPublishingAll, setIsPublishingAll] = useState(false);
   const [publishDone, setPublishDone] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [localImage, setLocalImage] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setLocalImage(url);
+    }
+  };
+
+  const handleGenerateCaptions = async () => {
+    if (!localImage) return;
+    setIsAnalyzing(true);
+    
+    try {
+      const res = await fetch('/api/captions/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: 'dummy_base64_data' }),
+      });
+      
+      const data = await res.json();
+      if (data.captions) {
+        setCaptions(data.captions);
+      }
+    } catch (error) {
+      console.error('Error generating captions:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const platform = platforms.find(p => p.id === activePlatform)!;
   const caption = captions[activePlatform] || '';
@@ -121,16 +154,45 @@ export default function EditorPage() {
             >
               <div className="glass-card" style={{ overflow: 'hidden' }}>
                 {/* Image placeholder */}
-                <div style={{ position: 'relative', background: 'rgba(124,58,237,0.05)', minHeight: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', padding: '40px 24px', borderBottom: '1px solid rgba(124,58,237,0.1)' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ImageIcon size={24} color="#7c3aed" />
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8', marginBottom: '6px' }}>No image selected</div>
-                    <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.6, maxWidth: '240px' }}>
-                      Generate and select a variation in the Creative Studio first, then proceed here.
-                    </div>
-                  </div>
+                <div style={{ position: 'relative', background: 'rgba(124,58,237,0.05)', minHeight: '380px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', padding: '40px 24px', borderBottom: '1px solid rgba(124,58,237,0.1)' }}>
+                  {localImage ? (
+                    <>
+                      <img src={localImage} alt="Uploaded preview" style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain', borderRadius: '8px', marginBottom: '12px' }} />
+                      <button onClick={() => setLocalImage(null)} className="btn-ghost" style={{ fontSize: '11px', padding: '6px 12px', position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)' }}>Remove</button>
+                      
+                      <button 
+                        onClick={handleGenerateCaptions}
+                        disabled={isAnalyzing}
+                        className="btn-primary" 
+                        style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '13px', background: isAnalyzing ? 'rgba(124,58,237,0.5)' : 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
+                      >
+                        {isAnalyzing ? <><Loader2 size={14} className="spin-slow" /> Analyzing Image...</> : <><Sparkles size={14} /> Write Captions with AI</>}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ImageIcon size={24} color="#7c3aed" />
+                      </div>
+                      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>No image selected</div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, maxWidth: '260px' }}>
+                          Upload an existing image or generate a new one with AI.
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <label className="btn-secondary" style={{ padding: '10px 16px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Upload size={14} /> Upload Image
+                          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                        </label>
+                        <Link href="/studio" style={{ textDecoration: 'none' }}>
+                          <button className="btn-primary" style={{ padding: '10px 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Sparkles size={14} /> Generate AI Image
+                          </button>
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Aspect ratio indicators */}
