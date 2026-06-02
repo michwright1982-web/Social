@@ -108,7 +108,8 @@ export async function POST(req: NextRequest) {
         model: cleanModelId,
         prompt: enhancedPrompt,
         n: 1,
-        size: openAiSize
+        size: openAiSize,
+        response_format: 'b64_json'
       };
 
       if (cleanModelId !== 'gpt-image-1') {
@@ -140,14 +141,20 @@ export async function POST(req: NextRequest) {
       }
 
       const data = await res.json();
-      const url = data?.data?.[0]?.url;
-      if (!url) {
-        return NextResponse.json({ error: 'No image URL returned from OpenAI' }, { status: 500 });
+      const imgData = data?.data?.[0];
+      
+      let imageUrl = imgData?.url;
+      if (!imageUrl && imgData?.b64_json) {
+        imageUrl = `data:image/png;base64,${imgData.b64_json}`;
+      }
+
+      if (!imageUrl) {
+        return NextResponse.json({ error: 'No image URL or base64 data returned from OpenAI' }, { status: 500 });
       }
 
       return NextResponse.json({ 
         success: true, 
-        images: [url] 
+        images: [imageUrl] 
       });
 
     } else {
