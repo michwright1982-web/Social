@@ -95,14 +95,14 @@ export async function POST(req: NextRequest) {
 
     } else if (provider === 'OpenAI') {
       // ── OpenAI (Dynamic Model ID) ──────────────────────────────────────────
-      const cleanModelId = model || 'dall-e-3';
+      const cleanModelId = model || 'gpt-image-2';
       
       let openAiSize = '1024x1024';
-      if (cleanModelId !== 'dall-e-2') {
+      if (cleanModelId !== 'gpt-image-1') {
         if (ratio === '9:16' || ratio === '4:5' || ratio === '3:4') openAiSize = '1024x1792';
         else if (ratio === '16:9') openAiSize = '1792x1024';
       } else {
-        openAiSize = '512x512'; // dall-e-2 only supports square sizes up to 1024
+        openAiSize = '512x512'; // gpt-image-1 only supports square sizes up to 1024
       }
 
       const reqBody: any = {
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         size: openAiSize
       };
 
-      if (cleanModelId !== 'dall-e-2') {
+      if (cleanModelId !== 'gpt-image-1') {
         reqBody.quality = 'standard';
       }
 

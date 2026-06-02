@@ -51,12 +51,12 @@ export async function GET(req: NextRequest) {
         });
         if (res.ok) {
           const data = await res.json();
-          // Filter only DALL-E image generation models
-          const dallEModels = data.data.filter((m: any) => m.id.includes('dall-e'));
+          // Filter only GPT Image generation models
+          const gptImageModels = data.data.filter((m: any) => m.id.includes('gpt-image'));
           
-          const mappedModels = dallEModels.map((m: any) => {
-            let label = m.id === 'dall-e-3' ? 'DALL-E 3' : m.id === 'dall-e-2' ? 'DALL-E 2' : m.id;
-            let badge = m.id === 'dall-e-3' ? 'Latest' : 'Legacy';
+          const mappedModels = gptImageModels.map((m: any) => {
+            let label = m.id === 'gpt-image-2' ? 'GPT Image 2' : m.id === 'gpt-image-1' ? 'GPT Image 1' : m.id;
+            let badge = m.id === 'gpt-image-2' ? 'Latest' : 'Legacy';
             return {
               id: m.id,
               label: label,
@@ -69,8 +69,8 @@ export async function GET(req: NextRequest) {
         } else {
           // If fetch fails, provide hardcoded defaults
           dynamicModels.push(
-            { id: 'dall-e-3', label: 'DALL-E 3', provider: 'OpenAI', badge: 'Offline Fallback' },
-            { id: 'dall-e-2', label: 'DALL-E 2', provider: 'OpenAI', badge: 'Legacy' }
+            { id: 'gpt-image-2', label: 'GPT Image 2', provider: 'OpenAI', badge: 'Offline Fallback' },
+            { id: 'gpt-image-1', label: 'GPT Image 1', provider: 'OpenAI', badge: 'Legacy' }
           );
         }
       } catch (err) {
