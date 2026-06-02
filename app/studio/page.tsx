@@ -12,15 +12,7 @@ import {
 import Link from 'next/link';
 import { useEffect } from 'react';
 
-const AI_MODELS = [
-  { id: 'dalle3', label: 'DALL-E 3', provider: 'OpenAI', badge: 'Recommended' },
-  { id: 'dalle2', label: 'DALL-E 2', provider: 'OpenAI', badge: 'Fast' },
-  { id: 'imagen3', label: 'Imagen 3', provider: 'Google AI Studio', badge: 'Ultra-real' },
-  { id: 'imagen2', label: 'Imagen 2', provider: 'Google AI Studio', badge: 'Fast' },
-  { id: 'sdxl', label: 'Stable Diffusion XL', provider: 'Stability AI', badge: 'ControlNet' },
-  { id: 'sd3', label: 'Stable Diffusion 3', provider: 'Stability AI', badge: 'New' },
-  { id: 'midjourney6', label: 'Midjourney v6', provider: 'Midjourney', badge: 'Creative' },
-];
+// Dynamic models will be fetched from the backend.
 
 const STYLES = ['Photorealistic', 'Cinematic', 'Editorial', 'Minimalist', 'Bold & Vibrant', 'Luxury'];
 
@@ -46,18 +38,20 @@ export default function StudioPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
+  const [aiModels, setAiModels] = useState<any[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
 
   useEffect(() => {
-    fetch('/api/keys')
+    fetch('/api/models')
       .then(res => res.json())
-      .then(keys => {
-        const providers = Array.from(new Set(keys.map((k: any) => k.provider))) as string[];
-        const supported = providers.filter(p => AI_MODELS.some(m => m.provider === p));
-        setAvailableProviders(supported);
-        if (supported.length > 0) {
-          setSelectedProvider(supported[0]);
-          const firstModel = AI_MODELS.find(m => m.provider === supported[0]);
+      .then(data => {
+        const { providers, models } = data;
+        setAvailableProviders(providers || []);
+        setAiModels(models || []);
+        
+        if (providers && providers.length > 0) {
+          setSelectedProvider(providers[0]);
+          const firstModel = models?.find((m: any) => m.provider === providers[0]);
           if (firstModel) setSelectedModel(firstModel.id);
         }
         setIsLoadingKeys(false);
@@ -67,11 +61,11 @@ export default function StudioPage() {
 
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
-    const firstModel = AI_MODELS.find(m => m.provider === provider);
+    const firstModel = aiModels.find(m => m.provider === provider);
     if (firstModel) setSelectedModel(firstModel.id);
   };
 
-  const filteredModels = AI_MODELS.filter(m => m.provider === selectedProvider);
+  const filteredModels = aiModels.filter(m => m.provider === selectedProvider);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -98,8 +92,8 @@ export default function StudioPage() {
     }, 400);
 
     try {
-      const selectedModelObj = AI_MODELS.find(m => m.id === selectedModel);
-      const provider = selectedModelObj?.provider || 'OpenAI';
+      const selectedModelObj = aiModels.find(m => m.id === selectedModel);
+      const provider = selectedModelObj?.provider || selectedProvider;
 
       // We ask for multiple variations visually, but some APIs (like DALL-E) cost a lot per image.
       // For now, we will generate 1 real image and duplicate it for the demo variations 
