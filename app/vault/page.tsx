@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
@@ -8,9 +9,11 @@ import {
   KeyRound, Eye, EyeOff, Plus, Trash2, CheckCircle2,
   AlertCircle, Lock, Shield,
   Zap, ExternalLink, RefreshCw, Copy, Check,
-  Server, Brain, Image as ImageIcon,
+  Server, Brain, Image as ImageIcon, Loader2,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface ApiKey {
   id: string;
@@ -23,32 +26,124 @@ interface ApiKey {
   icon: React.ReactNode;
 }
 
-interface SocialAccount {
-  id: string;
-  platform: string;
-  status: 'connected' | 'disconnected' | 'expired';
-  color: string;
-  icon: React.ReactNode;
+interface PlatformStatus {
+  connected: boolean;
+  handle?: string;
+  connected_at?: number;
 }
 
-const socialAccounts: SocialAccount[] = [
-  { id: '1', platform: 'Facebook', status: 'disconnected', color: '#1877F2', icon: <FacebookIcon size={18} /> },
-  { id: '2', platform: 'Instagram', status: 'disconnected', color: '#E1306C', icon: <InstagramIcon size={18} /> },
-  { id: '3', platform: 'X (Twitter)', status: 'disconnected', color: '#ffffff', icon: <XSocialIcon size={18} /> },
-  { id: '4', platform: 'LinkedIn', status: 'disconnected', color: '#0A66C2', icon: <LinkedinIcon size={18} /> },
+type SocialStatuses = Record<string, PlatformStatus>;
+
+// ─── Platform definitions ─────────────────────────────────────────────────────
+
+const SOCIAL_PLATFORMS = [
+  { id: 'facebook', label: 'Facebook', color: '#1877F2', icon: <FacebookIcon size={18} /> },
+  { id: 'x',        label: 'X (Twitter)', color: '#ffffff', icon: <XSocialIcon  size={18} /> },
+  { id: 'linkedin', label: 'LinkedIn',  color: '#0A66C2', icon: <LinkedinIcon  size={18} /> },
 ];
 
-export default function VaultPage() {
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-  const [showAddKey, setShowAddKey] = useState(false);
-  const [newProvider, setNewProvider] = useState('');
-  const [newKey, setNewKey] = useState('');
-  const [newLabel, setNewLabel] = useState('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [testingId, setTestingId] = useState<string | null>(null);
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  const toggleVisibility = (id: string) => setShowKeys(prev => ({ ...prev, [id]: !prev[id] }));
+function VaultContent() {
+  const searchParams = useSearchParams();
+
+  // ── API Keys state ─────────────────────────────────────────────────────────
+  const [apiKeys, setApiKeys]         = useState<ApiKey[]>([]);
+  const [showKeys, setShowKeys]       = useState<Record<string, boolean>>({});
+  const [showAddKey, setShowAddKey]   = useState(false);
+  const [newProvider, setNewProvider] = useState('');
+  const [newKey, setNewKey]           = useState('');
+  const [newLabel, setNewLabel]       = useState('');
+  const [copiedId, setCopiedId]       = useState<string | null>(null);
+  const [testingId, setTestingId]     = useState<string | null>(null);
+
+  // ── Social OAuth state ─────────────────────────────────────────────────────
+  const [socialStatuses, setSocialStatuses] = useState<SocialStatuses>({});
+  const [statusLoading, setStatusLoading]   = useState(true);
+  const [disconnecting, setDisconnecting]   = useState<string | null>(null);
+
+  // ── Toast notification ─────────────────────────────────────────────────────
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  // ── Load real OAuth status on mount ────────────────────────────────────────
+  const loadStatus = useCallback(async () => {
+    setStatusLoading(true);
+    try {
+      const res  = await fetch('/api/auth/status');
+      const data = (await res.json()) as SocialStatuses;
+      setSocialStatuses(data);
+    } catch {
+      showToast('Failed to load connection status', 'error');
+    } finally {
+      setStatusLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    loadStatus();
+  }, [loadStatus]);
+
+  // ── Handle ?connected= or ?error= redirects from callbacks ────────────────
+  useEffect(() => {
+    const connected = searchParams.get('connected');
+    const error     = searchParams.get('error');
+
+    if (connected) {
+      const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
+      showToast(`✓ ${label} connected successfully!`, 'success');
+      loadStatus();
+      // Clean URL without re-render
+      window.history.replaceState({}, '', '/vault');
+    }
+
+    if (error) {
+      const messages: Record<string, string> = {
+        facebook_denied:        'Facebook connection was cancelled.',
+        facebook_state_mismatch:'Facebook: security check failed. Please try again.',
+        facebook_token_failed:  'Facebook token exchange failed. Check your App credentials.',
+        x_denied:               'X connection was cancelled.',
+        x_state_mismatch:       'X: security check failed. Please try again.',
+        x_token_failed:         'X token exchange failed. Check your App credentials.',
+        linkedin_denied:        'LinkedIn connection was cancelled.',
+        linkedin_state_mismatch:'LinkedIn: security check failed. Please try again.',
+        linkedin_token_failed:  'LinkedIn token exchange failed. Check your App credentials.',
+      };
+      showToast(messages[error] ?? `Connection error: ${error}`, 'error');
+      window.history.replaceState({}, '', '/vault');
+    }
+  }, [searchParams, showToast, loadStatus]);
+
+  // ── Disconnect a platform ──────────────────────────────────────────────────
+  const handleDisconnect = async (platformId: string) => {
+    setDisconnecting(platformId);
+    try {
+      const res = await fetch('/api/auth/disconnect', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ platform: platformId }),
+      });
+      if (res.ok) {
+        setSocialStatuses(prev => ({ ...prev, [platformId]: { connected: false } }));
+        const label = SOCIAL_PLATFORMS.find(p => p.id === platformId)?.label ?? platformId;
+        showToast(`${label} disconnected.`, 'success');
+      } else {
+        showToast('Disconnect failed. Please try again.', 'error');
+      }
+    } catch {
+      showToast('Network error. Please try again.', 'error');
+    } finally {
+      setDisconnecting(null);
+    }
+  };
+
+  // ── API Key helpers ────────────────────────────────────────────────────────
+  const toggleVisibility = (id: string) =>
+    setShowKeys(prev => ({ ...prev, [id]: !prev[id] }));
 
   const handleCopy = (id: string, key: string) => {
     navigator.clipboard.writeText(key);
@@ -61,20 +156,18 @@ export default function VaultPage() {
     setTimeout(() => setTestingId(null), 2000);
   };
 
-  const handleDeleteKey = (id: string) => {
-    setApiKeys(prev => prev.filter(k => k.id !== id));
-  };
+  const handleDeleteKey = (id: string) => setApiKeys(prev => prev.filter(k => k.id !== id));
 
   const handleAddKey = () => {
     if (!newProvider || !newKey) return;
     const key: ApiKey = {
-      id: Date.now().toString(),
+      id:       Date.now().toString(),
       provider: newProvider,
-      label: newLabel || newProvider,
-      key: newKey,
-      status: 'untested',
-      color: '#7c3aed',
-      icon: newProvider === 'OpenAI' || newProvider === 'Anthropic'
+      label:    newLabel || newProvider,
+      key:      newKey,
+      status:   'untested',
+      color:    '#7c3aed',
+      icon:     newProvider === 'OpenAI' || newProvider === 'Anthropic'
         ? <Brain size={16} />
         : newProvider === 'Stability AI' || newProvider === 'Midjourney'
           ? <ImageIcon size={16} />
@@ -83,19 +176,22 @@ export default function VaultPage() {
     setApiKeys(prev => [...prev, key]);
     setNewProvider(''); setNewKey(''); setNewLabel('');
     setShowAddKey(false);
+    showToast(`${newProvider} key saved.`, 'success');
   };
 
+  // ── Badge helpers ──────────────────────────────────────────────────────────
   const statusBadge = (status: string) => {
     switch (status) {
-      case 'active': return <span className="badge badge-green"><CheckCircle2 size={9} /> Active</span>;
-      case 'invalid': return <span className="badge badge-red"><AlertCircle size={9} /> Invalid</span>;
-      case 'connected': return <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>;
-      case 'expired': return <span className="badge badge-amber"><AlertCircle size={9} /> Expired</span>;
+      case 'active':       return <span className="badge badge-green"><CheckCircle2 size={9} /> Active</span>;
+      case 'invalid':      return <span className="badge badge-red"><AlertCircle size={9} /> Invalid</span>;
+      case 'connected':    return <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>;
+      case 'expired':      return <span className="badge badge-amber"><AlertCircle size={9} /> Expired</span>;
       case 'disconnected': return <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Disconnected</span>;
-      default: return <span className="badge badge-violet">Untested</span>;
+      default:             return <span className="badge badge-violet">Untested</span>;
     }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="app-layout">
       <Sidebar />
@@ -103,7 +199,33 @@ export default function VaultPage() {
         <Topbar title="Secure Vault" subtitle="Manage API keys and social account connections" />
         <div className="page-content">
 
-          {/* Security Banner */}
+          {/* ── Toast ──────────────────────────────────────────────────────── */}
+          <AnimatePresence>
+            {toast && (
+              <motion.div
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                style={{
+                  position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
+                  zIndex: 200, padding: '12px 22px', borderRadius: '12px',
+                  background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                  border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  backdropFilter: 'blur(12px)',
+                  fontSize: '13px', fontWeight: 600,
+                  color: toast.type === 'success' ? '#34d399' : '#f87171',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {toast.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                {toast.message}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Security Banner ────────────────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -126,7 +248,7 @@ export default function VaultPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
 
-            {/* AI API Keys */}
+            {/* ── AI API Keys ─────────────────────────────────────────────── */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div>
@@ -173,9 +295,9 @@ export default function VaultPage() {
                 )}
               </AnimatePresence>
 
-              {/* Keys List */}
+              {/* Keys list / empty state */}
               {apiKeys.length === 0 && !showAddKey ? (
-                <div className="glass-card" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: '12px' }}>
+                <div className="glass-card" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '12px' }}>
                   <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <KeyRound size={20} color="#7c3aed" />
                   </div>
@@ -194,7 +316,7 @@ export default function VaultPage() {
                       key={key.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
+                      transition={{ delay: i * 0.08 }}
                       className="glass-card"
                       style={{ padding: '16px 20px' }}
                     >
@@ -211,7 +333,6 @@ export default function VaultPage() {
                         {statusBadge(key.status)}
                       </div>
 
-                      {/* Key display */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(15,22,36,0.8)', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', border: '1px solid rgba(124,58,237,0.1)' }}>
                         <code style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {showKeys[key.id] ? key.key : '••••••••••••••••••••••••••••••'}
@@ -224,25 +345,15 @@ export default function VaultPage() {
                         </button>
                       </div>
 
-                      {/* Actions */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Zap size={9} color="#7c3aed" /> Last used: {key.lastUsed || 'Never'}
                         </span>
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            className="btn-ghost"
-                            style={{ padding: '5px 10px', fontSize: '11px' }}
-                            onClick={() => handleTest(key.id)}
-                            id={`test-key-${key.id}`}
-                          >
+                          <button className="btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }} onClick={() => handleTest(key.id)} id={`test-key-${key.id}`}>
                             {testingId === key.id ? <><RefreshCw size={10} className="spin-slow" /> Testing...</> : <><Zap size={10} /> Test</>}
                           </button>
-                          <button
-                            onClick={() => handleDeleteKey(key.id)}
-                            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '8px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                            id={`delete-key-${key.id}`}
-                          >
+                          <button onClick={() => handleDeleteKey(key.id)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '8px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} id={`delete-key-${key.id}`}>
                             <Trash2 size={11} />
                           </button>
                         </div>
@@ -253,7 +364,7 @@ export default function VaultPage() {
               )}
             </motion.div>
 
-            {/* Social Accounts */}
+            {/* ── Social Accounts ─────────────────────────────────────────── */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <div style={{ marginBottom: '14px' }}>
                 <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -263,38 +374,103 @@ export default function VaultPage() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {socialAccounts.map((account, i) => (
-                  <motion.div
-                    key={account.id}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="glass-card"
-                    style={{ padding: '18px 20px' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: `${account.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: account.color }}>
-                          {account.icon}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>{account.platform}</div>
-                          <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>Not connected</div>
-                        </div>
-                      </div>
-                      {statusBadge(account.status)}
-                    </div>
+                {SOCIAL_PLATFORMS.map((platform, i) => {
+                  const status     = socialStatuses[platform.id] ?? { connected: false };
+                  const isLoading  = statusLoading;
+                  const isDisconnecting = disconnecting === platform.id;
 
-                    <div style={{ marginTop: '14px' }}>
-                      <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }} id={`connect-${account.id}`}>
-                        <ExternalLink size={11} /> Connect via OAuth
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+                  return (
+                    <motion.div
+                      key={platform.id}
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="glass-card"
+                      style={{ padding: '18px 20px' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: `${platform.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: platform.color }}>
+                            {platform.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>{platform.label}</div>
+                            <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                              {isLoading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Loader2 size={10} className="spin-slow" /> Checking...
+                                </span>
+                              ) : status.connected ? (
+                                <span style={{ color: '#64748b' }}>
+                                  {status.handle}
+                                  {status.connected_at && (
+                                    <span style={{ marginLeft: '6px', color: '#334155' }}>
+                                      · Connected {new Date(status.connected_at).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                'Not connected'
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status badge */}
+                        {isLoading ? (
+                          <span className="badge" style={{ background: 'rgba(71,85,105,0.15)', color: '#475569', border: '1px solid rgba(71,85,105,0.2)' }}>
+                            <Loader2 size={9} className="spin-slow" /> Loading
+                          </span>
+                        ) : status.connected ? (
+                          <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>
+                        ) : (
+                          <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Disconnected</span>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
+                        {status.connected ? (
+                          <>
+                            {/* Reconnect = just re-run the OAuth flow */}
+                            <a
+                              href={`/api/auth/${platform.id}/connect`}
+                              style={{ flex: 1, textDecoration: 'none' }}
+                              id={`reconnect-${platform.id}`}
+                            >
+                              <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }}>
+                                <RefreshCw size={11} /> Refresh Token
+                              </button>
+                            </a>
+                            <button
+                              onClick={() => handleDisconnect(platform.id)}
+                              disabled={isDisconnecting}
+                              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: '10px', padding: '8px 14px', cursor: isDisconnecting ? 'not-allowed' : 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'Inter', sans-serif", fontWeight: 600, opacity: isDisconnecting ? 0.6 : 1 }}
+                              id={`disconnect-${platform.id}`}
+                            >
+                              {isDisconnecting ? <Loader2 size={11} className="spin-slow" /> : <Trash2 size={11} />}
+                              {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                            </button>
+                          </>
+                        ) : (
+                          /* Full-page redirect — no JS fetch needed */
+                          <a
+                            href={`/api/auth/${platform.id}/connect`}
+                            style={{ flex: 1, textDecoration: 'none' }}
+                            id={`connect-${platform.id}`}
+                          >
+                            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }}>
+                              <ExternalLink size={11} /> Connect via OAuth
+                            </button>
+                          </a>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
 
-              {/* OAuth Info */}
+              {/* OAuth info banner */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -313,9 +489,19 @@ export default function VaultPage() {
                 </div>
               </motion.div>
             </motion.div>
+
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Suspense wrapper required by Next.js when using useSearchParams()
+export default function VaultPage() {
+  return (
+    <Suspense fallback={null}>
+      <VaultContent />
+    </Suspense>
   );
 }
