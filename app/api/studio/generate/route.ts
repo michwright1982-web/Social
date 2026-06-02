@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { prompt, provider, style = 'Photorealistic' } = body;
+  const { prompt, provider, model, style = 'Photorealistic' } = body;
   if (!prompt || !provider) {
     return NextResponse.json({ error: 'prompt and provider are required' }, { status: 400 });
   }
@@ -44,8 +44,9 @@ export async function POST(req: NextRequest) {
 
   try {
     if (provider === 'Google AI Studio') {
-      // ── Google AI Studio (Imagen 3) ──────────────────────────────────────────
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${providerKey}`, {
+      // ── Google AI Studio (Dynamic Model ID) ──────────────────────────────────
+      const cleanModelId = (model || 'imagen-4.0-generate-001').replace(/^models\//, '');
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${cleanModelId}:predict?key=${providerKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -60,9 +61,18 @@ export async function POST(req: NextRequest) {
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        console.error('Google AI Error:', err);
-        return NextResponse.json({ error: `Google AI Error: ${err}` }, { status: 502 });
+        const errText = await res.text();
+        console.error('Google AI Error:', errText);
+        
+        let customMessage = errText;
+        try {
+          const parsed = JSON.parse(errText);
+          if (parsed?.error?.message) {
+            customMessage = parsed.error.message;
+          }
+        } catch {}
+        
+        return NextResponse.json({ error: `Google AI Error: ${customMessage}` }, { status: res.status === 400 ? 400 : 502 });
       }
 
       const data = await res.json();

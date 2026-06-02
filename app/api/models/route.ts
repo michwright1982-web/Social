@@ -70,6 +70,56 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         console.error('Failed to fetch OpenAI models:', err);
       }
+    } else if (provider === 'Google AI Studio') {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyEntry.key}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Filter only Imagen image generation models
+          const googleModels = (data.models || []).filter((m: any) => 
+            m.name.includes('imagen') && 
+            m.supportedGenerationMethods?.includes('predict')
+          );
+          
+          const mappedModels = googleModels.map((m: any) => {
+            const id = m.name.replace(/^models\//, '');
+            let label = m.displayName || id;
+            if (label === 'Imagen 4') label = 'Imagen 4 (Generate 001)';
+            
+            let badge = 'Latest';
+            if (id.includes('ultra')) badge = 'Ultra';
+            else if (id.includes('fast')) badge = 'Fast';
+            else if (id.includes('3.0')) badge = 'v3.0';
+            
+            return {
+              id: id,
+              label: label,
+              provider: 'Google AI Studio',
+              badge: badge
+            };
+          });
+          
+          if (mappedModels.length > 0) {
+            dynamicModels = [...dynamicModels, ...mappedModels];
+          } else {
+            dynamicModels.push(
+              { id: 'imagen-4.0-generate-001', label: 'Imagen 4 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
+              { id: 'imagen-4.0-fast-generate-001', label: 'Imagen 4 Fast', provider: 'Google AI Studio', badge: 'Fast' }
+            );
+          }
+        } else {
+          dynamicModels.push(
+            { id: 'imagen-4.0-generate-001', label: 'Imagen 4 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
+            { id: 'imagen-4.0-fast-generate-001', label: 'Imagen 4 Fast', provider: 'Google AI Studio', badge: 'Fast' }
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch Google AI models:', err);
+        dynamicModels.push(
+          { id: 'imagen-4.0-generate-001', label: 'Imagen 4 (Generate 001)', provider: 'Google AI Studio', badge: 'Latest' },
+          { id: 'imagen-4.0-fast-generate-001', label: 'Imagen 4 Fast', provider: 'Google AI Studio', badge: 'Fast' }
+        );
+      }
     } else {
       // For providers without a dynamic models endpoint, use our hardcoded fallbacks
       const fallbacks = FALLBACK_MODELS.filter(m => m.provider === provider);
