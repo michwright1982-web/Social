@@ -8,10 +8,11 @@ import {
   Send, Check,
   Copy, RefreshCw, Sparkles, AlertCircle, CheckCircle2,
   Loader2, Hash, AtSign,
-  Clock, Zap, Globe, ImageIcon, Upload,
+  Clock, Zap, Globe, ImageIcon, Upload, X
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
+import { useEffect } from 'react';
 
 const platforms = [
   {
@@ -55,19 +56,37 @@ export default function EditorPage() {
   const [isPublishingAll, setIsPublishingAll] = useState(false);
   const [publishDone, setPublishDone] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [localImage, setLocalImage] = useState<string | null>(null);
+  const [localImages, setLocalImages] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [enabledPlatforms, setEnabledPlatforms] = useState<Record<string, boolean>>(
+    Object.fromEntries(platforms.map(p => [p.id, true]))
+  );
+
+  useEffect(() => {
+    const savedImagesRaw = localStorage.getItem('creative_studio_selected_images');
+    if (savedImagesRaw) {
+      try {
+        const parsed = JSON.parse(savedImagesRaw);
+        if (Array.isArray(parsed)) {
+          setLocalImages(parsed);
+        }
+      } catch (e) {
+        // Fallback for old single string format if any
+        setLocalImages([savedImagesRaw]);
+      }
+    }
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setLocalImage(url);
+      setLocalImages(prev => prev.length < 5 ? [...prev, url] : prev);
     }
   };
 
   const handleGenerateCaptions = async () => {
-    if (!localImage) return;
+    if (localImages.length === 0) return;
     setIsAnalyzing(true);
     
     try {
@@ -112,6 +131,8 @@ export default function EditorPage() {
     setPublishDone(false);
 
     for (const p of platforms) {
+      if (!enabledPlatforms[p.id]) continue;
+      
       setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'publishing' } }));
       await new Promise(r => setTimeout(r, 800 + Math.random() * 600));
       // Wire to real social API per platform
@@ -155,10 +176,24 @@ export default function EditorPage() {
               <div className="glass-card" style={{ overflow: 'hidden' }}>
                 {/* Image placeholder */}
                 <div style={{ position: 'relative', background: 'rgba(124,58,237,0.05)', minHeight: '380px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', padding: '40px 24px', borderBottom: '1px solid rgba(124,58,237,0.1)' }}>
-                  {localImage ? (
+                  {localImages.length > 0 ? (
                     <>
-                      <img src={localImage} alt="Uploaded preview" style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain', borderRadius: '8px', marginBottom: '12px' }} />
-                      <button onClick={() => setLocalImage(null)} className="btn-ghost" style={{ fontSize: '11px', padding: '6px 12px', position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)' }}>Remove</button>
+                      <div style={{ display: 'grid', gridTemplateColumns: localImages.length === 1 ? '1fr' : '1fr 1fr', gap: '8px', width: '100%', maxHeight: '400px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
+                        {localImages.map((img, i) => (
+                          <div key={i} style={{ position: 'relative', height: localImages.length > 2 ? '160px' : '260px', width: '100%', borderRadius: '8px', overflow: 'hidden', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(124,58,237,0.1)' }}>
+                            <img src={img} alt={`Preview ${i+1}`} style={{ height: '100%', width: '100%', objectFit: 'contain' }} />
+                            <button
+                              onClick={() => setLocalImages(prev => prev.filter((_, idx) => idx !== i))}
+                              style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '26px', height: '26px', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, transition: '0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                              onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button onClick={() => setLocalImages([])} className="btn-ghost" style={{ fontSize: '11px', padding: '6px 12px', position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', zIndex: 20 }}>Clear All</button>
                       
                       <button 
                         onClick={handleGenerateCaptions}
@@ -166,7 +201,7 @@ export default function EditorPage() {
                         className="btn-primary" 
                         style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '13px', background: isAnalyzing ? 'rgba(124,58,237,0.5)' : 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
                       >
-                        {isAnalyzing ? <><Loader2 size={14} className="spin-slow" /> Analyzing Image...</> : <><Sparkles size={14} /> Write Captions with AI</>}
+                        {isAnalyzing ? <><Loader2 size={14} className="spin-slow" /> Analyzing Image{localImages.length > 1 ? 's' : ''}...</> : <><Sparkles size={14} /> Write Captions with AI</>}
                       </button>
                     </>
                   ) : (
@@ -225,6 +260,7 @@ export default function EditorPage() {
                       <Globe size={14} color="#7c3aed" /> Publish Summary
                     </h3>
                     {platforms.map(p => {
+                      if (!enabledPlatforms[p.id]) return null;
                       const Icon = p.icon;
                       const s = platformStatuses[p.id];
                       return (
@@ -273,8 +309,8 @@ export default function EditorPage() {
                         transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', position: 'relative',
                       }}
                     >
-                      <Icon size={16} color={isActive ? p.color : '#64748b'} />
-                      <span style={{ fontSize: '10px' }}>{p.label.split(' ')[0]}</span>
+                      <Icon size={16} color={isActive ? p.color : '#64748b'} style={{ opacity: enabledPlatforms[p.id] ? 1 : 0.4 }} />
+                      <span style={{ fontSize: '10px', opacity: enabledPlatforms[p.id] ? 1 : 0.4 }}>{p.label.split(' ')[0]}</span>
                       {s.status !== 'idle' && (
                         <span style={{ position: 'absolute', top: '6px', right: '6px' }}>
                           {statusIcon(s.status)}
@@ -306,7 +342,14 @@ export default function EditorPage() {
                       </div>
                       <p style={{ fontSize: '11px', color: '#475569', marginTop: '4px', maxWidth: '300px', lineHeight: 1.5 }}>{platform.tip}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', marginRight: '8px', background: 'rgba(15,22,36,0.5)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontSize: '11px', color: enabledPlatforms[activePlatform] ? '#e2e8f0' : '#64748b', fontWeight: 600 }}>{enabledPlatforms[activePlatform] ? 'Post' : "Don't Post"}</span>
+                        <div style={{ width: '32px', height: '18px', background: enabledPlatforms[activePlatform] ? '#7c3aed' : 'rgba(255,255,255,0.1)', borderRadius: '10px', position: 'relative', transition: '0.3s' }} onClick={(e) => { e.preventDefault(); setEnabledPlatforms(prev => ({...prev, [activePlatform]: !prev[activePlatform]})); }}>
+                          <div style={{ width: '14px', height: '14px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: enabledPlatforms[activePlatform] ? '16px' : '2px', transition: '0.3s' }} />
+                        </div>
+                      </label>
+
                       <button
                         className="btn-ghost"
                         style={{ padding: '7px 12px', fontSize: '11px' }}
@@ -416,6 +459,7 @@ export default function EditorPage() {
                       Publishing Status
                     </div>
                     {platforms.map(p => {
+                      if (!enabledPlatforms[p.id]) return null;
                       const Icon = p.icon;
                       const s = platformStatuses[p.id];
                       return (

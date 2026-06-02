@@ -120,18 +120,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Credits indicator */}
-      <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(124,58,237,0.12)', borderBottom: '1px solid rgba(124,58,237,0.12)' }}>
-        <div style={{ fontSize: '11px', color: '#475569', marginBottom: '8px', fontWeight: 500 }}>AI Credits</div>
-        <div style={{ height: '4px', background: 'rgba(124,58,237,0.15)', borderRadius: '2px', marginBottom: '6px' }}>
-          <div style={{ width: '68%', height: '100%', background: 'linear-gradient(to right, #7c3aed, #06b6d4)', borderRadius: '2px' }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 600 }}>340 / 500</span>
-          <span style={{ fontSize: '11px', color: '#475569' }}>Used</span>
-        </div>
-      </div>
-
       {/* Bottom */}
       <div style={{ padding: '12px' }}>
         {bottomItems.map(item => {

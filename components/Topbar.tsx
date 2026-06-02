@@ -52,18 +52,6 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
         />
       </div>
 
-      {/* Credits badge */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '6px',
-        padding: '6px 12px', borderRadius: '10px',
-        background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)',
-        fontSize: '12px', color: '#a78bfa', fontWeight: 600,
-        cursor: 'pointer',
-      }}>
-        <Zap size={12} />
-        340 Credits
-      </div>
-
       {/* Notification */}
       <button style={{
         width: '36px', height: '36px', borderRadius: '10px',

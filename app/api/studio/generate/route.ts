@@ -9,14 +9,14 @@ interface ApiKey {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { prompt: string; provider: string; model?: string; style?: string };
+  let body: { prompt: string; provider: string; model?: string; style?: string; ratio?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { prompt, provider, model, style = 'Photorealistic' } = body;
+  const { prompt, provider, model, style = 'Photorealistic', ratio = '1:1' } = body;
   if (!prompt || !provider) {
     return NextResponse.json({ error: 'prompt and provider are required' }, { status: 400 });
   }
@@ -125,6 +125,15 @@ export async function POST(req: NextRequest) {
         selectedList = FOOD_IMAGES;
       }
 
+      let width = 1080;
+      let height = 1080;
+      if (ratio === '9:16') { width = 1080; height = 1920; }
+      else if (ratio === '16:9') { width = 1920; height = 1080; }
+      else if (ratio === '4:5') { width = 1080; height = 1350; }
+      else if (ratio === '3:4') { width = 1080; height = 1440; }
+
+      selectedList = selectedList.map(url => url.replace('w=1024', `w=${width}&h=${height}`));
+
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       return NextResponse.json({
@@ -135,6 +144,10 @@ export async function POST(req: NextRequest) {
     } else if (provider === 'Google AI Studio') {
       // ── Google AI Studio (Dynamic Model ID) ──────────────────────────────────
       const cleanModelId = (model || 'imagen-4.0-generate-001').replace(/^models\//, '');
+      
+      let googleRatio = ratio;
+      if (ratio === '4:5') googleRatio = '3:4'; // Google fallback for 4:5
+
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${cleanModelId}:predict?key=${providerKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,7 +157,7 @@ export async function POST(req: NextRequest) {
           ],
           parameters: {
             sampleCount: 1,
-            aspectRatio: "1:1"
+            aspectRatio: googleRatio
           }
         })
       });
@@ -178,6 +191,15 @@ export async function POST(req: NextRequest) {
     } else if (provider === 'OpenAI') {
       // ── OpenAI (Dynamic Model ID) ──────────────────────────────────────────
       const cleanModelId = model || 'dall-e-3';
+      
+      let openAiSize = '1024x1024';
+      if (cleanModelId !== 'dall-e-2') {
+        if (ratio === '9:16' || ratio === '4:5' || ratio === '3:4') openAiSize = '1024x1792';
+        else if (ratio === '16:9') openAiSize = '1792x1024';
+      } else {
+        openAiSize = '512x512'; // dall-e-2 only supports square sizes up to 1024
+      }
+
       const res = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
@@ -188,7 +210,7 @@ export async function POST(req: NextRequest) {
           model: cleanModelId,
           prompt: enhancedPrompt,
           n: 1,
-          size: cleanModelId === 'dall-e-2' ? '512x512' : '1024x1024'
+          size: openAiSize
         })
       });
 
