@@ -11,6 +11,7 @@ import {
   Sliders, Globe, Languages, ArrowRight, Loader2, AlertCircle, Trash2, Send
 } from 'lucide-react';
 import Link from 'next/link';
+import { saveToImageDB, loadFromImageDB } from '@/lib/image-db';
 
 // Dynamic models will be fetched from the backend.
 
@@ -111,27 +112,29 @@ export default function StudioPage() {
   const [aiModels, setAiModels] = useState<any[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
 
-  const loadHistory = useCallback(() => {
+  const loadHistory = useCallback(async () => {
     const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
     setActiveCompanyId(activeId);
     
-    // Migration from old global key to company-specific key
-    const oldHistory = localStorage.getItem('creative_studio_history');
-    if (oldHistory) {
-      localStorage.setItem(`creative_studio_history_${activeId}`, oldHistory);
-      localStorage.removeItem('creative_studio_history');
-    }
-
-    const historyData = localStorage.getItem(`creative_studio_history_${activeId}`);
-    if (historyData) {
-      try {
-        setGeneratedImages(JSON.parse(historyData));
-      } catch (e) {
-        setGeneratedImages([]);
+    // Check if we need to migrate existing localStorage data to IndexedDB
+    let dbHistory = await loadFromImageDB(`creative_studio_history_${activeId}`);
+    if (!dbHistory) {
+      const oldHistory = localStorage.getItem(`creative_studio_history_${activeId}`) || localStorage.getItem('creative_studio_history');
+      if (oldHistory) {
+        try {
+          dbHistory = JSON.parse(oldHistory);
+          await saveToImageDB(`creative_studio_history_${activeId}`, dbHistory);
+          localStorage.removeItem(`creative_studio_history_${activeId}`);
+          localStorage.removeItem('creative_studio_history');
+        } catch (e) {
+          dbHistory = [];
+        }
+      } else {
+        dbHistory = [];
       }
-    } else {
-      setGeneratedImages([]);
     }
+    
+    setGeneratedImages(dbHistory || []);
   }, []);
 
   useEffect(() => {
@@ -241,21 +244,15 @@ export default function StudioPage() {
           prompt: prompt, // save the prompt used for generation
         }));
 
-        setGeneratedImages(prev => {
-          // Limit history heavily to avoid localStorage 5MB Quota Exceeded error from large base64 images
-          const updated = [...newHistoryItems, ...prev].slice(0, 3);
+        const updatedHistory = [...newHistoryItems, ...generatedImages].slice(0, 30); // 30 items max in history
+        setGeneratedImages(updatedHistory);
+        
+        try {
           const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-          try {
-            localStorage.setItem(`creative_studio_history_${currentCompanyId}`, JSON.stringify(updated));
-          } catch (e) {
-            console.warn('Failed to save to localStorage', e);
-            // Fallback: if it still fails, just save the very latest one
-            try {
-              localStorage.setItem(`creative_studio_history_${currentCompanyId}`, JSON.stringify(updated.slice(0, 1)));
-            } catch {}
-          }
-          return updated;
-        });
+          saveToImageDB(`creative_studio_history_${currentCompanyId}`, updatedHistory).catch(e => console.warn('DB save failed', e));
+        } catch (e) {
+          console.warn('Failed to save to image DB', e);
+        }
         
         setTimeout(() => {
           galleryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -568,7 +565,11 @@ export default function StudioPage() {
                     {state === 'generating' ? (
                       <span className="badge badge-amber"><Zap size={10} /> Processing...</span>
                     ) : generatedImages.length > 0 ? (
-                      <button className="btn-ghost" onClick={() => setGeneratedImages([])} style={{ fontSize: '12px', padding: '8px 14px' }}>
+                      <button className="btn-ghost" onClick={() => {
+                          setGeneratedImages([]);
+                          const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                          saveToImageDB(`creative_studio_history_${currentCompanyId}`, []).catch(e => console.warn(e));
+                        }} style={{ fontSize: '12px', padding: '8px 14px' }}>
                         <RotateCcw size={12} /> Clear All
                       </button>
                     ) : null}
@@ -676,18 +677,18 @@ export default function StudioPage() {
                             <button
                               className="btn-primary"
                               disabled={selectedVariations.length === 0}
-                              onClick={() => {
+                              onClick={async () => {
                                 const selectedUrls = selectedVariations
                                   .map(id => generatedImages.find(img => img.id === id)?.url)
                                   .filter(Boolean) as string[];
                                 if (selectedUrls.length > 0) {
                                   try {
                                     const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-                                    localStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
+                                    await saveToImageDB(`creative_studio_selected_images_${currentCompanyId}`, selectedUrls);
                                     // Also set in sessionStorage as a safety net
                                     sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
                                   } catch (e) {
-                                    console.warn('Failed to save selected images to localStorage, falling back to sessionStorage', e);
+                                    console.warn('Failed to save selected images to DB, falling back to sessionStorage', e);
                                     try {
                                       const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
                                       sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));

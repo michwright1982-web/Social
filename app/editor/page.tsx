@@ -9,6 +9,7 @@ import {
   Loader2, Hash, AtSign, Clock, Zap, Globe, ImageIcon, Upload, X,
   Crop, Move, Minus, Plus, Eye, EyeOff, Layers, ToggleLeft, ToggleRight,
 } from 'lucide-react';
+import { loadFromImageDB } from '@/lib/image-db';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
 
@@ -72,19 +73,22 @@ export default function EditorPage() {
 
   // ── Load images & logo from localStorage ────────────────────────────────────
   useEffect(() => {
-    const loadSelectedImages = () => {
+    const loadSelectedImages = async () => {
       const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-      let raw = localStorage.getItem(`creative_studio_selected_images_${activeId}`);
-      if (!raw) raw = sessionStorage.getItem(`creative_studio_selected_images_${activeId}`);
+      let dbImages = await loadFromImageDB(`creative_studio_selected_images_${activeId}`);
       
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) setImages(parsed);
-        } catch { setImages([raw]); }
-      } else {
-        setImages([]);
+      if (!dbImages || dbImages.length === 0) {
+        let raw = localStorage.getItem(`creative_studio_selected_images_${activeId}`);
+        if (!raw) raw = sessionStorage.getItem(`creative_studio_selected_images_${activeId}`);
+        if (raw) {
+          try {
+            dbImages = JSON.parse(raw);
+          } catch { dbImages = [raw]; }
+        }
       }
+      
+      if (Array.isArray(dbImages)) setImages(dbImages);
+      else setImages([]);
     };
 
     loadSelectedImages();
