@@ -139,6 +139,13 @@ export default function StudioPage() {
       .catch(() => setIsLoadingKeys(false));
   }, []);
 
+  // Close AI rules modal on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setActiveTooltip(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
     const firstModel = aiModels.find(m => m.provider === provider);
@@ -262,7 +269,7 @@ export default function StudioPage() {
       <Sidebar />
       <div className="main-content">
         <Topbar title="Creative Studio" subtitle="AI-powered image generation & variation" />
-        <div className="page-content" style={{ paddingBottom: '290px', position: 'relative' }}>
+        <div className="page-content" style={{ paddingBottom: '160px', position: 'relative' }}>
           
           {/* Floating Error Message */}
           <AnimatePresence>
@@ -388,54 +395,112 @@ export default function StudioPage() {
                         <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.4' }}>{style.description}</p>
                       </div>
                       
-                      {/* Detailed Rules Popover */}
-                      <AnimatePresence>
-                        {activeTooltip === style.id && (
-                          <>
-                            {/* Backdrop click to close */}
-                            <div 
-                              onClick={(e) => { e.stopPropagation(); setActiveTooltip(null); }}
-                              style={{ position: 'fixed', inset: 0, zIndex: 90 }}
-                            />
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                              transition={{ duration: 0.15 }}
-                              style={{
-                                position: 'absolute',
-                                bottom: '100%',
-                                left: '12px',
-                                right: '12px',
-                                marginBottom: '10px',
-                                background: 'rgba(13, 17, 30, 0.98)',
-                                border: '1px solid rgba(124, 58, 237, 0.3)',
-                                backdropFilter: 'blur(20px)',
-                                boxShadow: '0 20px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
-                                borderRadius: '12px',
-                                padding: '14px',
-                                zIndex: 100,
-                                maxHeight: '260px',
-                                overflowY: 'auto',
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
-                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Style Rules</span>
-                                <button onClick={() => setActiveTooltip(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}><X size={12} /></button>
-                              </div>
-                              <div style={{ fontSize: '10.5px', color: '#94a3b8', lineHeight: '1.5', whiteSpace: 'pre-wrap', fontFamily: "'Inter', sans-serif" }}>
-                                {style.rules}
-                              </div>
-                            </motion.div>
-                          </>
-                        )}
-                      </AnimatePresence>
+                      {/* Rules modal is rendered at the top level below */}
                     </div>
                   );
                 })}
               </div>
             </div>
+
+            {/* ── AI Style Rules Modal ─────────────────────────────────────────── */}
+            <AnimatePresence>
+              {activeTooltip && (() => {
+                const activeStyle = STYLES.find(s => s.id === activeTooltip);
+                if (!activeStyle) return null;
+                return (
+                  <motion.div
+                    key="rules-backdrop"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => setActiveTooltip(null)}
+                    style={{
+                      position: 'fixed', inset: 0, zIndex: 200,
+                      background: 'rgba(4, 6, 15, 0.75)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '24px',
+                    }}
+                  >
+                    <motion.div
+                      key="rules-modal"
+                      initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        width: '100%', maxWidth: '560px',
+                        background: 'rgba(13, 17, 30, 0.98)',
+                        border: '1px solid rgba(124, 58, 237, 0.35)',
+                        backdropFilter: 'blur(24px)',
+                        borderRadius: '20px',
+                        boxShadow: '0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Modal Header */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '20px 24px 16px',
+                        borderBottom: '1px solid rgba(124, 58, 237, 0.12)',
+                        background: 'rgba(124, 58, 237, 0.05)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Sliders size={15} color="#a78bfa" />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{activeStyle.name}</div>
+                            <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: '1px' }}>AI Style Rules</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setActiveTooltip(null)}
+                          style={{
+                            width: '32px', height: '32px', borderRadius: '10px',
+                            background: 'rgba(71,85,105,0.2)', border: '1px solid rgba(71,85,105,0.3)',
+                            color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0,
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(71,85,105,0.2)'; e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'rgba(71,85,105,0.3)'; }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      {/* Modal Body */}
+                      <div style={{ padding: '20px 24px 24px', maxHeight: '60vh', overflowY: 'auto' }}>
+                        <div style={{
+                          fontSize: '13px', color: '#94a3b8', lineHeight: '1.75',
+                          whiteSpace: 'pre-wrap', fontFamily: "'Inter', sans-serif",
+                        }}>
+                          {activeStyle.rules}
+                        </div>
+                      </div>
+
+                      {/* Modal Footer */}
+                      <div style={{
+                        padding: '14px 24px',
+                        borderTop: '1px solid rgba(71,85,105,0.15)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      }}>
+                        <span style={{ fontSize: '11px', color: '#475569' }}>Click outside or press Esc to close</span>
+                        <button
+                          onClick={() => setActiveTooltip(null)}
+                          className="btn-secondary"
+                          style={{ padding: '8px 20px', fontSize: '12px' }}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                );
+              })()}
+            </AnimatePresence>
 
             <motion.div
               initial={{ opacity: 0 }}
@@ -597,206 +662,174 @@ export default function StudioPage() {
             </motion.div>
           </div>
 
-          {/* STICKY BOTTOM DOCK CONTROL BAR — EVEN TALLER & SPACIOUS */}
+          {/* BOTTOM DOCK */}
           <div style={{
             position: 'fixed',
             bottom: 0,
             left: 'var(--sidebar-width)',
             right: 0,
-            background: 'linear-gradient(to top, rgba(8, 10, 20, 0.98) 0%, rgba(13, 17, 30, 0.95) 100%)',
-            backdropFilter: 'blur(24px)',
-            borderTop: '1px solid rgba(124, 58, 237, 0.25)',
-            boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
-            padding: '38px 32px',
             zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '28px',
-            justifyContent: 'space-between'
+            background: 'linear-gradient(180deg, rgba(13,17,30,0.97) 0%, rgba(8,10,20,0.99) 100%)',
+            backdropFilter: 'blur(24px)',
+            borderTop: '1px solid rgba(124,58,237,0.2)',
+            boxShadow: '0 -8px 40px rgba(0,0,0,0.7)',
+            padding: '12px 24px 16px',
           }}>
-            
-            {/* 1. REFERENCE DESIGN (Left) — 1:1 RATIO */}
-            <div style={{ width: '120px', height: '120px', flexShrink: 0 }}>
-              <div
-                className={`drag-zone ${isDragging ? 'active' : ''}`}
-                style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', textAlign: 'center', cursor: 'pointer', position: 'relative', overflow: 'hidden', border: '1px dashed rgba(124,58,237,0.3)', borderRadius: '12px', background: 'rgba(15,22,36,0.4)' }}
-                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('file-input')?.click()}
-              >
-                <input id="file-input" type="file" accept="image/*" style={{ display: 'none' }}
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) { const r = new FileReader(); r.onload = ev => setUploadedImage(ev.target?.result as string); r.readAsDataURL(file); }
-                  }}
-                />
-                {uploadedImage ? (
-                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    <img src={uploadedImage} alt="Reference" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
-                    <button
-                      onClick={e => { e.stopPropagation(); setUploadedImage(null); }}
-                      style={{ position: 'absolute', top: '4px', right: '4px', width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(0,0,0,0.8)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
-                    ><X size={12} /></button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <Upload size={20} color="#7c3aed" />
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>Reference</span>
-                    <span style={{ fontSize: '10px', color: '#475569' }}>Drag & Drop</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Single row: label above + control below, all same height */}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
 
-            {/* 2. CREATIVE PROMPT (Center - Flexible) — EXACT 120px */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '120px', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+              {/* ── 1. Reference ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '148px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Reference</span>
+                <div
+                  className={`drag-zone ${isDragging ? 'active' : ''}`}
+                  style={{ width: '148px', height: '110px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px', cursor: 'pointer', position: 'relative', overflow: 'hidden', border: '1px dashed rgba(124,58,237,0.4)', borderRadius: '12px', background: 'rgba(15,22,36,0.5)', flexShrink: 0, transition: 'all 0.2s' }}
+                  onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('file-input')?.click()}
+                >
+                  <input id="file-input" type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => setUploadedImage(ev.target?.result as string); r.readAsDataURL(f); } }}
+                  />
+                  {uploadedImage ? (
+                    <>
+                      <img src={uploadedImage} alt="ref" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '11px', position: 'absolute', inset: 0 }} />
+                      <button onClick={e => { e.stopPropagation(); setUploadedImage(null); }} style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: '50%', background: 'rgba(0,0,0,0.75)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2 }}><X size={11} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={20} color="#7c3aed" />
+                      <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Upload Reference</span>
+                      <span style={{ fontSize: '10px', color: '#475569' }}>Drag & drop or click</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Divider ── */}
+              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+
+              {/* ── 2. Prompt ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Prompt</span>
+                  {/* Style chips inline */}
+                  <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
+                    {STYLES.map(s => (
+                      <button key={s.id} onClick={() => setSelectedStyle(s.id)} style={{
+                        padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, cursor: 'pointer',
+                        fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', flexShrink: 0,
+                        background: selectedStyle === s.id ? 'rgba(124,58,237,0.2)' : 'rgba(30,41,59,0.4)',
+                        border: selectedStyle === s.id ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(71,85,105,0.2)',
+                        color: selectedStyle === s.id ? '#a78bfa' : '#64748b', transition: 'all 0.2s',
+                      }}>{s.name.split(' & ')[0].split(' / ')[0]}</button>
+                    ))}
+                  </div>
+                </div>
                 <textarea
                   className="input-field"
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
                   placeholder="Describe your campaign vision... e.g. 'Luxury watch on marble surface, cinematic lighting...'"
-                  style={{ height: '80px', minHeight: '80px', resize: 'none', padding: '12px 16px', fontSize: '13px', borderRadius: '10px', width: '100%' }}
+                  style={{ height: '110px', resize: 'none', padding: '10px 13px', fontSize: '13px', borderRadius: '10px', width: '100%', lineHeight: 1.5 }}
                   id="prompt-input"
                 />
               </div>
 
-              {/* Minimal horizontal scrolling style chips */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', height: '28px', flexShrink: 0 }}>
-                <span style={{ fontSize: '10px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>Style:</span>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {STYLES.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSelectedStyle(s.id)}
-                      style={{
-                        padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 600,
-                        cursor: 'pointer', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap',
-                        background: selectedStyle === s.id ? 'rgba(124,58,237,0.2)' : 'rgba(30,41,59,0.4)',
-                        border: selectedStyle === s.id ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(71,85,105,0.2)',
-                        color: selectedStyle === s.id ? '#a78bfa' : '#64748b',
-                        transition: 'all 0.2s',
-                      }}
-                    >{s.name.split(' & ')[0].split(' / ')[0]}</button>
-                  ))}
+              {/* ── Divider ── */}
+              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+
+              {/* ── 3. Provider & Model ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '186px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Provider & Model</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', height: '110px' }}>
+                  {isLoadingKeys ? (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', background: 'rgba(15,22,36,0.4)', borderRadius: '9px', fontSize: '12px', color: '#64748b', border: '1px solid rgba(71,85,105,0.2)' }}>
+                      <Loader2 size={12} className="spin-slow" /> Loading...
+                    </div>
+                  ) : availableProviders.length === 0 ? (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '9px', fontSize: '11px', color: '#f87171' }}>
+                      No provider — add key in Vault
+                    </div>
+                  ) : (
+                    <select className="input-field" value={selectedProvider} onChange={e => handleProviderChange(e.target.value)}
+                      style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}>
+                      {availableProviders.map(p => <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>)}
+                    </select>
+                  )}
+                  <select className="input-field" value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
+                    style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}
+                    disabled={filteredModels.length === 0}>
+                    {filteredModels.length === 0
+                      ? <option style={{ background: '#0d1120' }}>No Model Available</option>
+                      : filteredModels.map(m => <option key={m.id} value={m.id} style={{ background: '#0d1120' }}>{m.label} ({m.badge})</option>)
+                    }
+                  </select>
                 </div>
               </div>
-            </div>
 
-            {/* 3. AI PROVIDER & MODEL (Right) — EXACT 120px */}
-            <div style={{ width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column', height: '120px', gap: '12px' }}>
-              {isLoadingKeys ? (
-                <div style={{ height: '54px', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 14px', background: 'rgba(15,22,36,0.4)', borderRadius: '10px', fontSize: '13px', color: '#64748b', border: '1px solid rgba(71,85,105,0.2)' }}>
-                  <Loader2 size={14} className="spin-slow" /> Loading...
+              {/* ── Divider ── */}
+              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+
+              {/* ── 4. Settings ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '174px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Settings</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', height: '110px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 12px', background: 'rgba(15,22,36,0.4)', borderRadius: '9px', border: '1px solid rgba(71,85,105,0.15)' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span>Variations</span>
+                      <span style={{ color: '#7c3aed', fontWeight: 800 }}>{numVariations}</span>
+                    </label>
+                    <input type="range" min={1} max={8} value={numVariations} onChange={e => setNumVariations(Number(e.target.value))}
+                      style={{ width: '100%', height: '4px', accentColor: '#7c3aed', cursor: 'pointer' }} />
+                  </div>
+                  <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="input-field"
+                    style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}>
+                    {[
+                      { val: '1:1',  label: '1:1 — Square' },
+                      { val: '9:16', label: '9:16 — Stories / Reels' },
+                      { val: '16:9', label: '16:9 — Landscape' },
+                      { val: '4:5',  label: '4:5 — IG Portrait' },
+                      { val: '3:4',  label: '3:4 — Portrait' },
+                    ].map(r => <option key={r.val} value={r.val} style={{ background: '#0d1120' }}>{r.label}</option>)}
+                  </select>
                 </div>
-              ) : availableProviders.length === 0 ? (
-                <div style={{ height: '54px', display: 'flex', alignItems: 'center', padding: '0 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '13px', color: '#f87171' }}>
-                  No provider configured
-                </div>
-              ) : (
-                <select 
-                  className="input-field" 
-                  value={selectedProvider} 
-                  onChange={(e) => handleProviderChange(e.target.value)}
-                  style={{ width: '100%', padding: '0 14px', fontSize: '13px', height: '54px', borderRadius: '10px' }}
+              </div>
+
+              {/* ── Divider ── */}
+              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+
+              {/* ── 5. Generate ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '120px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: 'transparent', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1, userSelect: 'none' }}>·</span>
+                <motion.button
+                  className="btn-primary"
+                  id="generate-btn"
+                  style={{ width: '120px', height: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 700, borderRadius: '12px', overflow: 'hidden', position: 'relative', flexShrink: 0 }}
+                  onClick={handleGenerate}
+                  disabled={state === 'generating' || !prompt.trim() || availableProviders.length === 0}
+                  whileTap={{ scale: 0.96 }}
                 >
-                  {availableProviders.map(p => (
-                    <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>
-                  ))}
-                </select>
-              )}
-
-              <select
-                className="input-field"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                style={{ width: '100%', padding: '0 14px', fontSize: '13px', height: '54px', borderRadius: '10px' }}
-                disabled={filteredModels.length === 0}
-              >
-                {filteredModels.length === 0 ? (
-                  <option style={{ background: '#0d1120' }}>No Model Available</option>
-                ) : (
-                  filteredModels.map(model => (
-                    <option key={model.id} value={model.id} style={{ background: '#0d1120' }}>
-                      {model.label} ({model.badge})
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            {/* 4. ADVANCED SETTINGS (Center Right) — EXACT 120px */}
-            <div style={{ width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column', height: '120px', gap: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', padding: '0 14px', background: 'rgba(15,22,36,0.3)', borderRadius: '10px', border: '1px solid rgba(71,85,105,0.15)', height: '54px', justifyContent: 'center' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Variations</span>
-                  <span style={{ color: '#7c3aed', fontWeight: 700 }}>{numVariations}</span>
-                </label>
-                <input type="range" min={1} max={8} value={numVariations} onChange={e => setNumVariations(Number(e.target.value))}
-                  style={{ width: '100%', marginTop: '6px', height: '6px', accentColor: '#7c3aed', cursor: 'pointer' }} />
+                  {state === 'generating' ? (
+                    <>
+                      <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                        {[0,1,2,3].map(i => <div key={i} className="wave-bar" style={{ animationDelay: `${i*0.1}s`, height: '10px', width: '3px' }} />)}
+                      </div>
+                      <span style={{ fontSize: '12px' }}>{Math.round(Math.min(progress, 100))}%</span>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(0,0,0,0.25)' }}>
+                        <motion.div style={{ height: '100%', background: 'rgba(255,255,255,0.85)' }} animate={{ width: `${Math.min(progress,100)}%` }} transition={{ duration: 0.3 }} />
+                      </div>
+                    </>
+                  ) : state === 'done' ? (
+                    <><RefreshCw size={20} /><span>Refresh</span></>
+                  ) : (
+                    <><Wand2 size={20} /><span>Generate</span></>
+                  )}
+                </motion.button>
               </div>
 
-              <select
-                value={aspectRatio}
-                onChange={e => setAspectRatio(e.target.value)}
-                className="input-field"
-                style={{ width: '100%', padding: '0 14px', fontSize: '13px', height: '54px', borderRadius: '10px' }}
-              >
-                {[
-                  { val: '1:1', label: '1:1 (Square)' },
-                  { val: '9:16', label: '9:16 (Stories/Reels)' },
-                  { val: '16:9', label: '16:9 (Landscape)' },
-                  { val: '4:5', label: '4:5 (IG Portrait)' },
-                  { val: '3:4', label: '3:4 (Portrait)' }
-                ].map(r => (
-                  <option key={r.val} value={r.val} style={{ background: '#0d1120' }}>{r.label}</option>
-                ))}
-              </select>
             </div>
-
-            {/* 5. GENERATE BUTTON TILE (Far Right) — EXACT 120px */}
-            <div style={{ width: '160px', flexShrink: 0, height: '120px', position: 'relative' }}>
-              <motion.button
-                className="btn-primary"
-                style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '10px', fontSize: '15px', fontWeight: 700, borderRadius: '12px', overflow: 'hidden', position: 'relative' }}
-                onClick={handleGenerate}
-                disabled={state === 'generating' || !prompt.trim() || availableProviders.length === 0}
-                whileTap={{ scale: 0.98 }}
-                id="generate-btn"
-              >
-                {state === 'generating' ? (
-                  <>
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      {[0, 1, 2, 3].map(i => (
-                        <div key={i} className="wave-bar" style={{ animationDelay: `${i * 0.1}s`, height: '12px', width: '3px' }} />
-                      ))}
-                    </div>
-                    <span style={{ fontSize: '12px', marginTop: '4px' }}>{Math.round(Math.min(progress, 100))}%</span>
-                    
-                    {/* Progress overlay background fill */}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', background: 'rgba(0,0,0,0.2)' }}>
-                      <motion.div
-                        style={{ height: '100%', background: '#fff' }}
-                        animate={{ width: `${Math.min(progress, 100)}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                  </>
-                ) : state === 'done' ? (
-                  <>
-                    <RefreshCw size={24} />
-                    <span>Refresh</span>
-                  </>
-                ) : (
-                  <>
-                    <Wand2 size={24} />
-                    <span>Generate</span>
-                  </>
-                )}
-              </motion.button>
-            </div>
-
           </div>
 
         </div>
@@ -804,3 +837,4 @@ export default function StudioPage() {
     </div>
   );
 }
+

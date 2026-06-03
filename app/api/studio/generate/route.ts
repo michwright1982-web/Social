@@ -23,31 +23,51 @@ export async function POST(req: NextRequest) {
 
   let providerKey = '';
 
-    // 1. Get API Key for the requested provider from the cookie
-    const rawCookie = req.cookies.get('ai_provider_keys')?.value;
-    if (!rawCookie) {
-      return NextResponse.json({ error: 'No API keys configured. Please add one in the Secure Vault.' }, { status: 401 });
-    }
-
-    let keys: ApiKey[] = [];
+  // 1. Get Brand Context
+  let brandRules = '';
+  const brandCookie = req.cookies.get('ai_brand_context')?.value;
+  if (brandCookie) {
     try {
-      const decrypted = await decryptToken(rawCookie);
-      keys = JSON.parse(decrypted);
-    } catch {
-      return NextResponse.json({ error: 'Failed to decrypt API keys' }, { status: 500 });
+      const decryptedBrand = await decryptToken(brandCookie);
+      const parsedBrand = decryptedBrand.startsWith('{') ? JSON.parse(decryptedBrand) : { context: decryptedBrand };
+      const { context, font, color } = parsedBrand;
+      if (context || font || color) {
+        brandRules = '\n\nBRAND GUIDELINES TO FOLLOW STRICTLY:\n';
+        if (context) brandRules += `- Brand Context: ${context}\n`;
+        if (color) {
+          const colorStr = Array.isArray(color) ? color.join(', ') : color;
+          brandRules += `- Brand Colors: incorporate the color(s) ${colorStr} beautifully into the scene or lighting.\n`;
+        }
+        if (font) brandRules += `- Typography Style: if any text or structural layout is implied, evoke the geometric and structural feel of the ${font} font family.\n`;
+      }
+    } catch (error) {
+      console.warn('Failed to parse brand context for generation', error);
     }
+  }
 
-    const foundKey = keys.find(k => k.provider === provider && k.status === 'active')?.key || keys.find(k => k.provider === provider)?.key;
-    if (!foundKey) {
-      return NextResponse.json({ error: `No active API key found for ${provider}. Please configure it in the Secure Vault.` }, { status: 401 });
-    }
-    providerKey = foundKey;
+  // 2. Get API Key for the requested provider from the cookie
+  const rawCookie = req.cookies.get('ai_provider_keys')?.value;
+  if (!rawCookie) {
+    return NextResponse.json({ error: 'No API keys configured. Please add one in the Secure Vault.' }, { status: 401 });
+  }
+
+  let keys: ApiKey[] = [];
+  try {
+    const decrypted = await decryptToken(rawCookie);
+    keys = JSON.parse(decrypted);
+  } catch {
+    return NextResponse.json({ error: 'Failed to decrypt API keys' }, { status: 500 });
+  }
+
+  const foundKey = keys.find(k => k.provider === provider && k.status === 'active')?.key || keys.find(k => k.provider === provider)?.key;
+  if (!foundKey) {
+    return NextResponse.json({ error: `No active API key found for ${provider}. Please configure it in the Secure Vault.` }, { status: 401 });
+  }
+  providerKey = foundKey;
 
   const enhancedPrompt = styleRules 
-    ? `${prompt}. Strict Style Rules to follow:
-${styleRules}
-Maintain high quality, highly detailed composition.`
-    : `${prompt}, style: ${style}, high quality, detailed`;
+    ? `${prompt}. Strict Style Rules to follow:\n${styleRules}\nMaintain high quality, highly detailed composition.${brandRules}`
+    : `${prompt}, style: ${style}, high quality, detailed.${brandRules}`;
 
   try {
     if (provider === 'Google AI Studio') {
@@ -167,6 +187,71 @@ Maintain high quality, highly detailed composition.`
       return NextResponse.json({ 
         success: true, 
         images: resultingImages 
+      });
+
+    } else if (provider === 'Hugging Face') {
+      // ── Hugging Face Inference API ──────────────────────────────────────────
+      const hfModelId = model || 'black-forest-labs/FLUX.1-schnell';
+
+      // Map aspect ratio to pixel dimensions for HF models
+      let width = 1024;
+      let height = 1024;
+      if (ratio === '9:16') { width = 768;  height = 1360; }
+      else if (ratio === '16:9') { width = 1360; height = 768; }
+      else if (ratio === '4:5') { width = 896;  height = 1120; }
+      else if (ratio === '3:4') { width = 768;  height = 1024; }
+
+      const hfRes = await fetch(
+        `https://api-inference.huggingface.co/models/${hfModelId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${providerKey.trim()}`,
+            'Content-Type':  'application/json',
+          },
+          body: JSON.stringify({
+            inputs: enhancedPrompt,
+            parameters: {
+              width,
+              height,
+              num_inference_steps: hfModelId.includes('schnell') ? 4 : 28,
+              guidance_scale: hfModelId.includes('schnell') ? 0 : 3.5,
+            },
+          }),
+        }
+      );
+
+      if (!hfRes.ok) {
+        const errText = await hfRes.text();
+        console.error('Hugging Face Error:', hfRes.status, errText);
+
+        if (hfRes.status === 503) {
+          return NextResponse.json(
+            { error: 'Hugging Face model is loading — please wait ~20 seconds and try again.' },
+            { status: 503 }
+          );
+        }
+
+        let customMessage = errText;
+        try {
+          const parsed = JSON.parse(errText);
+          if (parsed?.error) customMessage = parsed.error;
+        } catch {}
+
+        return NextResponse.json(
+          { error: `Hugging Face Error: ${customMessage}` },
+          { status: hfRes.status === 401 ? 401 : 502 }
+        );
+      }
+
+      // HF returns the image as a binary blob
+      const imageBuffer = await hfRes.arrayBuffer();
+      const base64 = Buffer.from(imageBuffer).toString('base64');
+      const contentType = hfRes.headers.get('content-type') || 'image/jpeg';
+
+      return NextResponse.json({
+        success: true,
+        images: [`data:${contentType};base64,${base64}`],
       });
 
     } else {

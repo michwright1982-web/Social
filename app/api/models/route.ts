@@ -16,6 +16,15 @@ const FALLBACK_MODELS = [
   { id: 'midjourney6', label: 'Midjourney v6', provider: 'Midjourney', badge: 'Creative' },
 ];
 
+// Curated Hugging Face image generation models
+const HUGGING_FACE_MODELS = [
+  { id: 'black-forest-labs/FLUX.1-dev',      label: 'FLUX.1 Dev',       provider: 'Hugging Face', badge: 'Best Quality' },
+  { id: 'black-forest-labs/FLUX.1-schnell',  label: 'FLUX.1 Schnell',   provider: 'Hugging Face', badge: 'Ultra Fast' },
+  { id: 'stabilityai/stable-diffusion-3.5-large', label: 'SD 3.5 Large', provider: 'Hugging Face', badge: 'High Fidelity' },
+  { id: 'stabilityai/stable-diffusion-xl-base-1.0', label: 'SDXL 1.0',  provider: 'Hugging Face', badge: 'Popular' },
+  { id: 'runwayml/stable-diffusion-v1-5',    label: 'SD v1.5',           provider: 'Hugging Face', badge: 'Classic' },
+];
+
 export async function GET(req: NextRequest) {
   const rawCookie = req.cookies.get('ai_provider_keys')?.value;
   if (!rawCookie) {
@@ -126,6 +135,9 @@ export async function GET(req: NextRequest) {
           { id: 'imagen-3.0-fast-generate-001', label: 'Imagen 3 Fast', provider: 'Google AI Studio', badge: 'Fast' }
         );
       }
+    } else if (provider === 'Hugging Face') {
+      // Hugging Face — return our curated model list (no public enumeration endpoint)
+      dynamicModels = [...dynamicModels, ...HUGGING_FACE_MODELS];
     } else {
       // For providers without a dynamic models endpoint, use our hardcoded fallbacks
       const fallbacks = FALLBACK_MODELS.filter(m => m.provider === provider);

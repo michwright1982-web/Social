@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Wand2,
@@ -12,12 +13,14 @@ import {
   Settings,
   Zap,
   Sparkles,
+  Target,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/studio', label: 'Creative Studio', icon: Wand2 },
   { href: '/editor', label: 'Unified Editor', icon: PenLine },
+  { href: '/brand', label: 'Brand Identity', icon: Target },
   { href: '/vault', label: 'Secure Vault', icon: KeyRound },
   { href: '/analytics', label: 'Analytics', icon: BarChart2 },
 ];
@@ -26,35 +29,193 @@ const bottomItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
+import { ChevronDown, Plus } from 'lucide-react';
+
+interface Company {
+  id: string;
+  name: string;
+  context: string;
+  font: string;
+  colors: string[];
+  logo: string | null;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const loadCompanies = () => {
+    const stored = localStorage.getItem('ai_marketing_companies');
+    const storedActive = localStorage.getItem('ai_marketing_active_company_id');
+    
+    if (stored) {
+      setCompanies(JSON.parse(stored));
+      if (storedActive) setActiveCompanyId(storedActive);
+    } else {
+      // Data Migration from V1 (Single Company)
+      fetch('/api/brand')
+        .then(r => r.json())
+        .then(data => {
+          const storedLogo = localStorage.getItem('company_logo_png');
+          if (data.context || data.name || storedLogo) {
+            const defaultCompany: Company = {
+              id: Date.now().toString(),
+              name: data.name || 'Default Company',
+              context: data.context || '',
+              font: data.font || 'Inter',
+              colors: Array.isArray(data.color) ? data.color : (data.color ? [data.color] : ['#7c3aed']),
+              logo: storedLogo || null
+            };
+            localStorage.setItem('ai_marketing_companies', JSON.stringify([defaultCompany]));
+            localStorage.setItem('ai_marketing_active_company_id', defaultCompany.id);
+            setCompanies([defaultCompany]);
+            setActiveCompanyId(defaultCompany.id);
+          }
+        })
+        .catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    loadCompanies();
+    window.addEventListener('brand-updated', loadCompanies);
+    return () => window.removeEventListener('brand-updated', loadCompanies);
+  }, []);
+
+  const handleSwitchCompany = async (id: string) => {
+    localStorage.setItem('ai_marketing_active_company_id', id);
+    setActiveCompanyId(id);
+    setShowDropdown(false);
+    
+    const company = companies.find(c => c.id === id);
+    if (company) {
+      await fetch('/api/brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context: company.context,
+          font: company.font,
+          color: company.colors,
+          name: company.name
+        })
+      });
+      window.dispatchEvent(new Event('brand-updated'));
+    }
+  };
+
+  const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
+  const displayLogo = activeCompany?.logo || null;
+  const displayName = activeCompany?.name || null;
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
-      <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(124,58,237,0.12)' }}>
+      {/* Workspace Switcher */}
+      <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(124,58,237,0.12)', position: 'relative' }}>
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+          onClick={() => setShowDropdown(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}
+          whileTap={{ scale: 0.98 }}
         >
           <div style={{
-            width: '40px', height: '40px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #06b6d4 100%)',
+            width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+            background: displayLogo ? 'transparent' : 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #06b6d4 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }} className="glow-violet">
-            <Sparkles size={20} color="white" />
+            overflow: 'hidden'
+          }} className={displayLogo ? '' : 'glow-violet'}>
+            {displayLogo ? (
+              <img src={displayLogo} alt="Company Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <Sparkles size={20} color="white" />
+            )}
           </div>
-          <div>
-            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '15px', color: '#f1f5f9' }}>
-              AI Marketing
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '15px', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+              {displayName ? displayName : 'AI Marketing'}
             </div>
-            <div style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
-              Hub
+            <div style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+              {displayName ? 'Marketing Hub' : 'Hub'}
             </div>
           </div>
+          <ChevronDown size={16} color="#64748b" style={{ transform: showDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
         </motion.div>
+
+        {/* Dropdown Menu */}
+        {showDropdown && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              position: 'absolute', top: '75px', left: '16px', right: '16px', zIndex: 100,
+              background: '#0f1624', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '12px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)', overflow: 'hidden', padding: '8px'
+            }}
+          >
+            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', padding: '8px 12px 4px' }}>Workspaces</div>
+            {companies.map(c => (
+              <div
+                key={c.id}
+                onClick={() => handleSwitchCompany(c.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px',
+                  background: activeCompanyId === c.id ? 'rgba(124,58,237,0.15)' : 'transparent',
+                  color: activeCompanyId === c.id ? '#a78bfa' : '#cbd5e1',
+                  cursor: 'pointer', fontSize: '13px', fontWeight: activeCompanyId === c.id ? 600 : 500,
+                }}
+                onMouseEnter={e => { if (activeCompanyId !== c.id) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                onMouseLeave={e => { if (activeCompanyId !== c.id) e.currentTarget.style.background = 'transparent'; }}
+              >
+                {c.logo ? (
+                  <img src={c.logo} alt={c.name} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                ) : (
+                  <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Target size={12} /></div>
+                )}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name || 'Unnamed Company'}</span>
+              </div>
+            ))}
+            
+            <div style={{ margin: '8px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }} />
+            
+            <Link href="/brand" style={{ textDecoration: 'none' }} onClick={() => {
+              setShowDropdown(false);
+              const newCompany = {
+                id: Date.now().toString(),
+                name: '',
+                context: '',
+                font: 'Inter',
+                colors: ['#7c3aed'],
+                logo: null
+              };
+              const updated = [...companies, newCompany];
+              localStorage.setItem('ai_marketing_companies', JSON.stringify(updated));
+              localStorage.setItem('ai_marketing_active_company_id', newCompany.id);
+              
+              fetch('/api/brand', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  context: newCompany.context,
+                  font: newCompany.font,
+                  color: newCompany.colors,
+                  name: newCompany.name
+                })
+              });
+              
+              window.dispatchEvent(new Event('brand-updated'));
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px',
+                color: '#06b6d4', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <Plus size={14} /> Add New Company
+              </div>
+            </Link>
+          </motion.div>
+        )}
       </div>
 
       {/* Nav */}

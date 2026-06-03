@@ -3,40 +3,38 @@ import { encryptToken, decryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
 
 const BRAND_CONTEXT_COOKIE = 'ai_brand_context';
 
-/**
- * GET /api/brand
- * Returns the saved Brand Context from the encrypted cookie.
- */
 export async function GET(req: NextRequest) {
   const rawCookie = req.cookies.get(BRAND_CONTEXT_COOKIE)?.value;
   if (!rawCookie) {
-    return NextResponse.json({ context: '' });
+    return NextResponse.json({ context: '', font: '', color: '' });
   }
 
   try {
     const decrypted = await decryptToken(rawCookie);
-    return NextResponse.json({ context: decrypted });
+    // Backward compatibility: if it's not JSON, assume it's just context
+    if (decrypted.startsWith('{')) {
+      const parsed = JSON.parse(decrypted);
+      return NextResponse.json(parsed);
+    } else {
+      return NextResponse.json({ context: decrypted, font: '', color: '' });
+    }
   } catch (error) {
     console.error('Failed to parse brand context from cookie:', error);
-    return NextResponse.json({ context: '' });
+    return NextResponse.json({ context: '', font: '', color: '' });
   }
 }
 
-/**
- * POST /api/brand
- * Encrypts and saves the Brand Context to cookie.
- */
 export async function POST(req: NextRequest) {
-  let context = '';
   try {
     const body = await req.json();
-    context = body.context || '';
-  } catch (error) {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+    const contextStr = JSON.stringify({
+      context: body.context || '',
+      font: body.font || '',
+      color: body.color || '',
+      name: body.name || ''
+    });
 
-  try {
-    const encrypted = await encryptToken(context);
+    const encrypted = await encryptToken(contextStr);
 
     const response = NextResponse.json({ success: true });
     response.cookies.set(BRAND_CONTEXT_COOKIE, encrypted, COOKIE_OPTIONS);

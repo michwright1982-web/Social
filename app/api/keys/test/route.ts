@@ -78,7 +78,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ valid: false, message: `Stability AI returned ${res.status}` });
       }
 
-      // ── Unknown / Custom ──────────────────────────────────────────────────
+      // ── Hugging Face ──────────────────────────────────────────────────
+      case 'Hugging Face': {
+        const res = await fetch('https://huggingface.co/api/whoami-v2', {
+          headers: { Authorization: `Bearer ${key.trim()}` },
+        });
+        if (res.ok) return NextResponse.json({ valid: true,  message: 'Hugging Face token is valid' });
+        if (res.status === 401)
+          return NextResponse.json({ valid: false, message: 'Invalid Hugging Face token' });
+        return NextResponse.json({ valid: false, message: `Hugging Face returned ${res.status}` });
+      }
+
+      // ── Unknown / Custom ────────────────────────────────────────────────
       default:
         return NextResponse.json({
           valid:   true,

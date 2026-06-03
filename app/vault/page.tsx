@@ -9,7 +9,8 @@ import {
   KeyRound, Eye, EyeOff, Plus, Trash2, CheckCircle2,
   AlertCircle, Lock, Shield,
   Zap, ExternalLink, RefreshCw, Copy, Check,
-  Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings, Target
+  Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings, Target,
+  X, Upload,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
@@ -46,6 +47,7 @@ const SOCIAL_PLATFORMS = [
 const PROVIDER_CONFIG: Record<string, { color: string; icon: React.ReactNode; hint: string }> = {
   'Google AI Studio': { color: '#4285F4', icon: <Sparkles size={16} />, hint: 'AIza...' },
   'OpenAI':           { color: '#10b981', icon: <Brain     size={16} />, hint: 'sk-proj-...' },
+  'Hugging Face':     { color: '#ff9d00', icon: <ImageIcon size={16} />, hint: 'hf_...' },
   'Anthropic':        { color: '#f59e0b', icon: <Brain     size={16} />, hint: 'sk-ant-...' },
   'Stability AI':     { color: '#8b5cf6', icon: <ImageIcon size={16} />, hint: 'sk-...' },
   'Midjourney':       { color: '#ec4899', icon: <ImageIcon size={16} />, hint: 'Paste your key' },
@@ -80,9 +82,7 @@ function VaultContent() {
   const [credsForm, setCredsForm] = useState({ clientId: '', clientSecret: '' });
   const [savingCreds, setSavingCreds] = useState(false);
 
-  // ── Brand Context state ────────────────────────────────────────────────────
-  const [brandContext, setBrandContext] = useState('');
-  const [savingBrandContext, setSavingBrandContext] = useState(false);
+
 
   // ── Toast notification ─────────────────────────────────────────────────────
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -96,20 +96,15 @@ function VaultContent() {
   const loadInitialData = useCallback(async () => {
     setStatusLoading(true);
     try {
-      const [statusRes, keysRes, credsRes, brandRes] = await Promise.all([
+      const [statusRes, keysRes, credsRes] = await Promise.all([
         fetch('/api/auth/status'),
         fetch('/api/keys'),
-        fetch('/api/auth/credentials'),
-        fetch('/api/brand')
+        fetch('/api/auth/credentials')
       ]);
       
       if (statusRes.ok) setSocialStatuses(await statusRes.json());
       if (keysRes.ok) setApiKeys(await keysRes.json());
       if (credsRes.ok) setOauthCreds(await credsRes.json());
-      if (brandRes.ok) {
-        const bd = await brandRes.json();
-        if (bd.context) setBrandContext(bd.context);
-      }
 
     } catch {
       showToast('Failed to load connection status', 'error');
@@ -302,25 +297,7 @@ function VaultContent() {
     }
   };
 
-  const handleSaveBrandContext = async () => {
-    setSavingBrandContext(true);
-    try {
-      const res = await fetch('/api/brand', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: brandContext }),
-      });
-      if (res.ok) {
-        showToast('Brand Context saved securely', 'success');
-      } else {
-        showToast('Failed to save Brand Context', 'error');
-      }
-    } catch {
-      showToast('Network error while saving context', 'error');
-    } finally {
-      setSavingBrandContext(false);
-    }
-  };
+
 
   // ── Badge helpers ──────────────────────────────────────────────────────────
   const statusBadge = (status: string) => {
@@ -391,40 +368,7 @@ function VaultContent() {
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
-            {/* ── Brand & Product Context ──────────────────────────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="glass-card"
-              style={{ padding: '20px', gridColumn: '1 / -1' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                <div>
-                  <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Target size={15} color="#ec4899" /> Brand & Product Context
-                  </h2>
-                  <p style={{ fontSize: '11px', color: '#475569', marginTop: '4px', maxWidth: '600px', lineHeight: 1.5 }}>
-                    Describe your brand voice, product details, target audience, or campaign goals. AI will use this exactly to generate highly tailored captions.
-                  </p>
-                </div>
-                <button 
-                  className="btn-primary" 
-                  style={{ padding: '8px 16px', fontSize: '12px' }} 
-                  onClick={handleSaveBrandContext}
-                  disabled={savingBrandContext}
-                >
-                  {savingBrandContext ? <><Loader2 size={13} className="spin-slow" /> Saving...</> : <><Check size={13} /> Save Context</>}
-                </button>
-              </div>
-              <textarea
-                className="input-field"
-                placeholder="e.g. 'We are a luxury sustainable coffee brand targeting young professionals in London. Our tone is witty, elegant, and energetic...'"
-                value={brandContext}
-                onChange={e => setBrandContext(e.target.value)}
-                style={{ width: '100%', minHeight: '80px', resize: 'vertical', fontSize: '13px', lineHeight: 1.6 }}
-              />
-            </motion.div>
+
 
             {/* ── AI API Keys ─────────────────────────────────────────────── */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
@@ -456,7 +400,7 @@ function VaultContent() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <select className="input-field" style={{ fontSize: '13px' }} value={newProvider} onChange={e => setNewProvider(e.target.value)} id="new-provider-select">
                         <option value="" style={{ background: '#0d1120' }}>Select Provider</option>
-                        {['Google AI Studio', 'OpenAI', 'Stability AI', 'Midjourney'].map(p => (
+                        {['Google AI Studio', 'OpenAI', 'Hugging Face', 'Stability AI', 'Midjourney'].map(p => (
                           <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>
                         ))}
                       </select>
