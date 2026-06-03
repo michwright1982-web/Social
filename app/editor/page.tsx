@@ -74,7 +74,9 @@ export default function EditorPage() {
   useEffect(() => {
     const loadSelectedImages = () => {
       const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-      const raw = localStorage.getItem(`creative_studio_selected_images_${activeId}`);
+      let raw = localStorage.getItem(`creative_studio_selected_images_${activeId}`);
+      if (!raw) raw = sessionStorage.getItem(`creative_studio_selected_images_${activeId}`);
+      
       if (raw) {
         try {
           const parsed = JSON.parse(raw);

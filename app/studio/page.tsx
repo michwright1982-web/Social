@@ -81,6 +81,7 @@ export type GeneratedImage = {
   id: string;
   url: string;
   timestamp: number;
+  prompt?: string;
 };
 
 // Placeholder generated images — replace with real AI output in production
@@ -237,15 +238,21 @@ export default function StudioPage() {
           id: `img-${timestamp}-${index}`,
           url,
           timestamp: timestamp + index, // slightly offset to keep unique
+          prompt: prompt, // save the prompt used for generation
         }));
 
         setGeneratedImages(prev => {
-          const updated = [...newHistoryItems, ...prev].slice(0, 20);
+          // Limit history heavily to avoid localStorage 5MB Quota Exceeded error from large base64 images
+          const updated = [...newHistoryItems, ...prev].slice(0, 3);
+          const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
           try {
-            const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
             localStorage.setItem(`creative_studio_history_${currentCompanyId}`, JSON.stringify(updated));
           } catch (e) {
             console.warn('Failed to save to localStorage', e);
+            // Fallback: if it still fails, just save the very latest one
+            try {
+              localStorage.setItem(`creative_studio_history_${currentCompanyId}`, JSON.stringify(updated.slice(0, 1)));
+            } catch {}
           }
           return updated;
         });
@@ -616,6 +623,20 @@ export default function StudioPage() {
                             <Trash2 size={13} />
                           </button>
 
+                          {img.prompt && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPrompt(img.prompt!);
+                              }}
+                              className="hover-action-btn"
+                              style={{ position: 'absolute', top: '10px', right: '46px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+                              title="Reuse this prompt"
+                            >
+                              <RotateCcw size={13} />
+                            </button>
+                          )}
+
                           {selectedVariations.includes(img.id) && (
                             <motion.div
                               initial={{ scale: 0 }}
@@ -663,8 +684,14 @@ export default function StudioPage() {
                                   try {
                                     const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
                                     localStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
+                                    // Also set in sessionStorage as a safety net
+                                    sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
                                   } catch (e) {
-                                    console.warn('Failed to save selected images to localStorage', e);
+                                    console.warn('Failed to save selected images to localStorage, falling back to sessionStorage', e);
+                                    try {
+                                      const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                                      sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
+                                    } catch {}
                                   }
                                 }
                                 router.push('/editor');
