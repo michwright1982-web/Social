@@ -327,15 +327,25 @@ export default function EditorPage() {
           })
         });
 
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error("API Error:", res.status, errText);
+          let msg = errText.substring(0, 50); // limit length
+          try { msg = JSON.parse(errText).error || msg; } catch {}
+          setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: `Error ${res.status}: ${msg}` } }));
+          continue;
+        }
+
         const data = await res.json();
         
-        if (res.ok && data.success) {
+        if (data.success) {
           setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'success' } }));
         } else {
           setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: data.error || 'Failed to publish' } }));
         }
       } catch (err: any) {
-        setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: 'Network error occurred' } }));
+        console.error("Network Error:", err);
+        setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: err.message || 'Network error occurred' } }));
       }
     }
     
