@@ -85,6 +85,13 @@ export type GeneratedImage = {
   prompt?: string;
 };
 
+export interface AiModel {
+  id: string;
+  provider: string;
+  label: string;
+  badge: string;
+}
+
 // Placeholder generated images — replace with real AI output in production
 const GENERATED_IMAGES: string[] = [];
 
@@ -109,7 +116,7 @@ export default function StudioPage() {
   const galleryRef = useRef<HTMLDivElement>(null);
   
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
-  const [aiModels, setAiModels] = useState<any[]>([]);
+  const [aiModels, setAiModels] = useState<AiModel[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
 
   const loadHistory = useCallback(async () => {
@@ -126,7 +133,7 @@ export default function StudioPage() {
           await saveToImageDB(`creative_studio_history_${activeId}`, dbHistory);
           localStorage.removeItem(`creative_studio_history_${activeId}`);
           localStorage.removeItem('creative_studio_history');
-        } catch (e) {
+        } catch {
           dbHistory = [];
         }
       } else {
@@ -134,7 +141,46 @@ export default function StudioPage() {
       }
     }
     
-    setGeneratedImages(dbHistory || []);
+    // Sanitize and deduplicate history items to ensure unique IDs and valid object format
+    const sanitizedHistory: GeneratedImage[] = [];
+    const seenIds = new Set<string>();
+    const seenUrls = new Set<string>();
+
+    if (Array.isArray(dbHistory)) {
+      dbHistory.forEach((img: unknown, index: number) => {
+        let sanitized: GeneratedImage | null = null;
+        if (typeof img === 'string') {
+          sanitized = {
+            id: `img-legacy-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 7)}`,
+            url: img,
+            timestamp: Date.now() - index * 1000,
+          };
+        } else if (img && typeof img === 'object') {
+          const imgObj = img as { id?: string; url?: string; timestamp?: number; prompt?: string };
+          if (imgObj.url) {
+            sanitized = {
+              id: imgObj.id || `img-legacy-${imgObj.timestamp || Date.now()}-${index}-${Math.random().toString(36).substring(2, 7)}`,
+              url: imgObj.url,
+              timestamp: imgObj.timestamp || (Date.now() - index * 1000),
+              prompt: imgObj.prompt,
+            };
+          }
+        }
+
+        if (sanitized && !seenIds.has(sanitized.id) && !seenUrls.has(sanitized.url)) {
+          seenIds.add(sanitized.id);
+          seenUrls.add(sanitized.url);
+          sanitizedHistory.push(sanitized);
+        }
+      });
+    }
+    
+    setGeneratedImages(sanitizedHistory);
+
+    // Save sanitized history back to DB if it has been updated
+    if (dbHistory && dbHistory.length !== sanitizedHistory.length) {
+      saveToImageDB(`creative_studio_history_${activeId}`, sanitizedHistory).catch(e => console.warn(e));
+    }
   }, []);
 
   useEffect(() => {
@@ -153,7 +199,7 @@ export default function StudioPage() {
         
         if (providers && providers.length > 0) {
           setSelectedProvider(providers[0]);
-          const firstModel = models?.find((m: any) => m.provider === providers[0]);
+          const firstModel = models?.find((m: { provider: string; id: string }) => m.provider === providers[0]);
           if (firstModel) setSelectedModel(firstModel.id);
         }
         setIsLoadingKeys(false);
@@ -260,10 +306,10 @@ export default function StudioPage() {
       }
       
       setState('done');
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearInterval(interval);
       setState('idle');
-      setErrorMsg(err.message);
+      setErrorMsg(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -277,12 +323,8 @@ export default function StudioPage() {
     e.stopPropagation();
     setGeneratedImages(prev => {
       const updated = prev.filter(img => img.id !== id);
-      try {
-        const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-        localStorage.setItem(`creative_studio_history_${currentCompanyId}`, JSON.stringify(updated));
-      } catch (e) {
-        console.warn('Failed to update localStorage', e);
-      }
+      const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+      saveToImageDB(`creative_studio_history_${currentCompanyId}`, updated).catch(e => console.warn('DB delete save failed', e));
       return updated;
     });
     setSelectedVariations(prev => prev.filter(vid => vid !== id));
