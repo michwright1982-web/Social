@@ -300,15 +300,46 @@ export default function EditorPage() {
   // ── Publish ──────────────────────────────────────────────────────────────────
   const handlePublishAll = async () => {
     setIsPublishingAll(true); setPublishDone(false);
+    
+    // 1. Compose the final image with logo and crop
     const composedImage = images.length > 0 ? await composeImage(images[activeImageIdx] || images[0]) : null;
+    
+    if (!composedImage) {
+      showToast('No image available to publish', 'error');
+      setIsPublishingAll(false);
+      return;
+    }
+
+    // 2. Publish to each enabled platform
     for (const p of platforms) {
       if (!enabledPlatforms[p.id]) continue;
+      
       setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'publishing' } }));
-      await new Promise(r => setTimeout(r, 700 + Math.random() * 500));
-      setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: 'Connect account in Vault to publish' } }));
+      
+      try {
+        const res = await fetch('/api/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform: p.id,
+            imageBase64: composedImage,
+            caption: captions[p.id] || ''
+          })
+        });
+
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+          setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'success' } }));
+        } else {
+          setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: data.error || 'Failed to publish' } }));
+        }
+      } catch (err: any) {
+        setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: 'Network error occurred' } }));
+      }
     }
+    
     setIsPublishingAll(false); setPublishDone(true);
-    void composedImage; // composedImage ready — wire to real API
   };
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

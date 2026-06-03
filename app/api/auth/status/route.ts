@@ -45,8 +45,25 @@ export async function GET(req: NextRequest) {
         connected_at: payload.connected_at,
       };
     } catch {
-      // Cookie is present but corrupted — treat as disconnected
       result[platform] = { connected: false };
+    }
+  }
+
+  // --- Override Facebook status using oauth_app_creds ---
+  const credsCookie = req.cookies.get('oauth_app_creds')?.value;
+  if (credsCookie) {
+    try {
+      const decryptedCreds = await decryptToken(credsCookie);
+      const creds = JSON.parse(decryptedCreds);
+      if (creds.facebook && creds.facebook.clientId && creds.facebook.clientSecret) {
+        result.facebook = {
+          connected: true,
+          handle: creds.facebook.clientId, // Page ID
+          connected_at: Date.now()
+        };
+      }
+    } catch (e) {
+      // ignore parsing errors
     }
   }
 
