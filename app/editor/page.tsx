@@ -726,7 +726,15 @@ export default function EditorPage() {
 
                     {/* Clear image */}
                     <button
-                      onClick={() => { setImages([]); setActiveImageIdx(0); setLogoScaleMap({}); setLogoPosMap({}); }}
+                      onClick={async () => {
+                        setImages([]); setActiveImageIdx(0); setLogoScaleMap({}); setLogoPosMap({});
+                        try {
+                          const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                          const key = `creative_studio_selected_images_${activeId}`;
+                          await saveToImageDB(key, []);
+                          sessionStorage.setItem(key, JSON.stringify([]));
+                        } catch { /* best effort */ }
+                      }}
                       className="btn-ghost"
                       style={{ padding: '6px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px', color: '#f87171' }}
                     >
@@ -1047,7 +1055,7 @@ export default function EditorPage() {
                   <Sparkles size={16} color="#7c3aed" /> Studio Gallery
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  Click an image to add it to your editor ({images.length}/5 selected)
+                  Click an image to toggle it in your editor ({images.length}/5 selected)
                 </div>
               </div>
               <button
@@ -1073,16 +1081,19 @@ export default function EditorPage() {
                     return (
                       <motion.div
                         key={si.id}
-                        whileHover={{ scale: alreadyAdded ? 1 : 1.03 }}
+                        whileHover={{ scale: 1.03 }}
                         onClick={() => {
-                          if (alreadyAdded) return;
-                          if (images.length >= 5) return;
-                          setImages(prev => [...prev, si.url]);
-                          setShowStudioPicker(false);
+                          if (alreadyAdded) {
+                            const idx = images.indexOf(si.url);
+                            if (idx !== -1) handleRemoveImage(idx);
+                          } else {
+                            if (images.length >= 5) return;
+                            setImages(prev => [...prev, si.url]);
+                          }
                         }}
                         style={{
                           position: 'relative', borderRadius: '12px', overflow: 'hidden',
-                          aspectRatio: '1/1', cursor: alreadyAdded ? 'default' : 'pointer',
+                          aspectRatio: '1/1', cursor: 'pointer',
                           border: alreadyAdded ? '2px solid #7c3aed' : '2px solid transparent',
                           opacity: alreadyAdded ? 0.6 : 1,
                         }}
