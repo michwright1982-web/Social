@@ -60,12 +60,12 @@ export async function GET(req: NextRequest) {
         });
         if (res.ok) {
           const data = await res.json();
-          // Filter only GPT Image generation models
-          const gptImageModels = data.data.filter((m: any) => m.id.includes('gpt-image'));
+          // Filter only DALL-E image generation models
+          const gptImageModels = data.data.filter((m: any) => m.id.includes('dall-e'));
           
           const mappedModels = gptImageModels.map((m: any) => {
-            let label = m.id === 'gpt-image-2' ? 'GPT Image 2' : m.id === 'gpt-image-1' ? 'GPT Image 1' : m.id;
-            let badge = m.id === 'gpt-image-2' ? 'Latest' : 'Legacy';
+            let label = m.id === 'dall-e-3' ? 'DALL-E 3' : m.id === 'dall-e-2' ? 'DALL-E 2' : m.id;
+            let badge = m.id === 'dall-e-3' ? 'Latest' : 'Legacy';
             return {
               id: m.id,
               label: label,
@@ -78,8 +78,8 @@ export async function GET(req: NextRequest) {
         } else {
           // If fetch fails, provide hardcoded defaults
           dynamicModels.push(
-            { id: 'gpt-image-2', label: 'GPT Image 2', provider: 'OpenAI', badge: 'Offline Fallback' },
-            { id: 'gpt-image-1', label: 'GPT Image 1', provider: 'OpenAI', badge: 'Legacy' }
+            { id: 'dall-e-3', label: 'DALL-E 3', provider: 'OpenAI', badge: 'Latest' },
+            { id: 'dall-e-2', label: 'DALL-E 2', provider: 'OpenAI', badge: 'Legacy' }
           );
         }
       } catch (err) {
@@ -144,6 +144,24 @@ export async function GET(req: NextRequest) {
       dynamicModels = [...dynamicModels, ...fallbacks];
     }
   }
+
+  // Sort models by estimated cost/compute (lowest first)
+  const getCostScore = (id: string) => {
+    const lowerId = id.toLowerCase();
+    // Cheapest / Fastest
+    if (lowerId.includes('dall-e-2')) return 1;
+    if (lowerId.includes('fast') || lowerId.includes('schnell') || lowerId.includes('turbo')) return 1;
+    if (lowerId.includes('v1-5') || lowerId.includes('1.5')) return 1;
+    // Mid tier
+    if (lowerId.includes('xl')) return 2;
+    if (lowerId.includes('dall-e-3')) return 3;
+    if (lowerId.includes('imagen')) return 3;
+    // High tier
+    if (lowerId.includes('dev') || lowerId.includes('large') || lowerId.includes('3.5')) return 4;
+    return 5;
+  };
+
+  dynamicModels.sort((a, b) => getCostScore(a.id) - getCostScore(b.id));
 
   return NextResponse.json({
     providers,

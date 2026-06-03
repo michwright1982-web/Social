@@ -165,6 +165,13 @@ export default function StudioPage() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Force 1:1 aspect ratio for DALL-E 2
+  useEffect(() => {
+    if (selectedModel === 'dall-e-2') {
+      setAspectRatio('1:1');
+    }
+  }, [selectedModel]);
+
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
     const firstModel = aiModels.find(m => m.provider === provider);
@@ -833,7 +840,8 @@ export default function StudioPage() {
                       style={{ width: '100%', height: '4px', accentColor: '#7c3aed', cursor: 'pointer' }} />
                   </div>
                   <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="input-field"
-                    style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}>
+                    disabled={selectedModel === 'dall-e-2'}
+                    style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: selectedModel === 'dall-e-2' ? 'not-allowed' : 'pointer', opacity: selectedModel === 'dall-e-2' ? 0.5 : 1 }}>
                     {[
                       { val: '1:1',  label: '1:1 — Square' },
                       { val: '9:16', label: '9:16 — Stories / Reels' },
