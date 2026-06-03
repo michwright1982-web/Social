@@ -105,6 +105,7 @@ export default function StudioPage() {
   const [progress, setProgress] = useState(0);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedVariations, setSelectedVariations] = useState<string[]>([]);
+  const [persistedSelectedUrls, setPersistedSelectedUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
@@ -188,6 +189,19 @@ export default function StudioPage() {
     return () => window.removeEventListener('brand-updated', loadHistory);
   }, [loadHistory]);
 
+  // Restore previously selected image IDs when Studio opens (persist across Editor nav)
+  useEffect(() => {
+    const restoreSelection = async () => {
+      const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+      const savedUrls = await loadFromImageDB(`creative_studio_selected_images_${activeId}`);
+      if (Array.isArray(savedUrls) && savedUrls.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPersistedSelectedUrls(savedUrls);
+      }
+    };
+    restoreSelection();
+  }, []);
+
   useEffect(() => {
     fetch('/api/models')
       .then(res => res.json())
@@ -236,7 +250,7 @@ export default function StudioPage() {
     if (!prompt.trim()) return;
     setState('generating');
     setProgress(0);
-    setSelectedVariations([]);
+    // Do NOT clear selectedVariations so existing selections survive new generations
     setErrorMsg(null);
     setAnimateHistoryEntrance(false);
     // Remove setGeneratedImages([]) so we retain history
@@ -625,7 +639,13 @@ export default function StudioPage() {
                       </div>
                     ))}
 
-                    {generatedImages.map((img, i) => (
+                    {generatedImages.map((img, i) => {
+                      // An image is "selected" if its ID is in selectedVariations,
+                      // OR its URL was part of the previously persisted selection from the Editor.
+                      const isSelectedById = selectedVariations.includes(img.id);
+                      const isSelectedByUrl = persistedSelectedUrls.includes(img.url);
+                      const isSelected = isSelectedById || isSelectedByUrl;
+                      return (
                       <motion.div
                         key={img.id}
                         className="masonry-item"
@@ -636,27 +656,33 @@ export default function StudioPage() {
                         <div
                           id={`variation-${img.id}`}
                           onClick={() => {
+                            if (isSelectedByUrl && !isSelectedById) {
+                              // Image was persisted-selected by URL; clicking deselects it from persisted set
+                              setPersistedSelectedUrls(prev => prev.filter(u => u !== img.url));
+                              return;
+                            }
                             setSelectedVariations(prev => {
                               if (prev.includes(img.id)) {
                                 return prev.filter(id => id !== img.id);
                               }
-                              if (prev.length >= 5) {
-                                return prev;
-                              }
+                              const totalSelected = prev.length + persistedSelectedUrls.filter(u =>
+                                !generatedImages.some(gi => gi.id === img.id && gi.url === u)
+                              ).length;
+                              if (totalSelected >= 5) return prev;
                               return [...prev, img.id];
                             });
                           }}
                           style={{
                             position: 'relative', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
-                            border: selectedVariations.includes(img.id) ? '2px solid #7c3aed' : '2px solid rgba(124,58,237,0.15)',
+                            border: isSelected ? '2px solid #7c3aed' : '2px solid rgba(124,58,237,0.15)',
                             transition: 'all 0.3s',
-                            boxShadow: selectedVariations.includes(img.id) ? '0 0 0 4px rgba(124,58,237,0.2)' : 'none',
+                            boxShadow: isSelected ? '0 0 0 4px rgba(124,58,237,0.2)' : 'none',
                             height: 'auto',
                             background: 'rgba(124,58,237,0.05)',
                           }}
                         >
                           <img src={img.url} alt={`Generated item`} style={{ width: '100%', height: 'auto', display: 'block' }} />
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(124,58,237,0.2)', opacity: selectedVariations.includes(img.id) ? 1 : 0, transition: '0.3s', pointerEvents: 'none' }} />
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(124,58,237,0.2)', opacity: isSelected ? 1 : 0, transition: '0.3s', pointerEvents: 'none' }} />
                           
                           <button 
                             onClick={(e) => handleDelete(img.id, e)}
@@ -681,7 +707,7 @@ export default function StudioPage() {
                             </button>
                           )}
 
-                          {selectedVariations.includes(img.id) && (
+                          {isSelected && (
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
@@ -697,57 +723,71 @@ export default function StudioPage() {
                           )}
                         </div>
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <AnimatePresence>
-                    {selectedVariations.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        style={{ position: 'fixed', bottom: '210px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}
-                      >
-                        <div className="glass-card" style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(20px)' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ImageIcon size={16} color="#7c3aed" />
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{selectedVariations.length} image{selectedVariations.length > 1 ? 's' : ''} selected</div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ready to generate captions & publish</div>
-                          </div>
-                          <div>
-                            <button
-                              className="btn-primary"
-                              disabled={selectedVariations.length === 0}
-                              onClick={async () => {
-                                const selectedUrls = selectedVariations
-                                  .map(id => generatedImages.find(img => img.id === id)?.url)
-                                  .filter(Boolean) as string[];
-                                if (selectedUrls.length > 0) {
-                                  try {
-                                    const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-                                    await saveToImageDB(`creative_studio_selected_images_${currentCompanyId}`, selectedUrls);
-                                    // Also set in sessionStorage as a safety net
-                                    sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
-                                  } catch (e) {
-                                    console.warn('Failed to save selected images to DB, falling back to sessionStorage', e);
+                    {(() => {
+                      // Merge ID-based and URL-based selections for total count
+                      const idSelectedUrls = selectedVariations
+                        .map(id => generatedImages.find(img => img.id === id)?.url)
+                        .filter(Boolean) as string[];
+                      const mergedUrls = Array.from(new Set([...persistedSelectedUrls, ...idSelectedUrls]));
+                      const totalCount = mergedUrls.length;
+                      return totalCount > 0 ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 20 }}
+                          style={{ position: 'fixed', bottom: '210px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}
+                        >
+                          <div className="glass-card" style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(20px)' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <ImageIcon size={16} color="#7c3aed" />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{totalCount} image{totalCount > 1 ? 's' : ''} selected</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{totalCount > 1 ? 'Will be published as a carousel post' : 'Ready to generate captions & publish'}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                className="btn-ghost"
+                                onClick={() => {
+                                  setSelectedVariations([]);
+                                  setPersistedSelectedUrls([]);
+                                }}
+                                style={{ padding: '10px 14px', fontSize: '13px' }}
+                              >
+                                <X size={14} /> Clear
+                              </button>
+                              <button
+                                className="btn-primary"
+                                onClick={async () => {
+                                  if (mergedUrls.length > 0) {
                                     try {
                                       const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-                                      sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
-                                    } catch {}
+                                      await saveToImageDB(`creative_studio_selected_images_${currentCompanyId}`, mergedUrls);
+                                      sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(mergedUrls));
+                                    } catch (e) {
+                                      console.warn('Failed to save selected images to DB, falling back to sessionStorage', e);
+                                      try {
+                                        const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                                        sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(mergedUrls));
+                                      } catch {}
+                                    }
                                   }
-                                }
-                                router.push('/editor');
-                              }}
-                              style={{ padding: '14px 24px', fontSize: '14px' }}
-                            >
-                              Generate Captions <Send size={16} />
-                            </button>
+                                  router.push('/editor');
+                                }}
+                                style={{ padding: '14px 24px', fontSize: '14px' }}
+                              >
+                                Generate Captions <Send size={16} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
+                        </motion.div>
+                      ) : null;
+                    })()}
                   </AnimatePresence>
                 </div>
               )}

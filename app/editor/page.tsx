@@ -64,9 +64,18 @@ export default function EditorPage() {
   // ── Logo state ──────────────────────────────────────────────────────────────
   const [companyLogo, setCompanyLogo]   = useState<string | null>(null);
   const [showLogo, setShowLogo]         = useState(true);
-  const [logoScale, setLogoScale]       = useState(25); // percent of image width
-  const [logoPos, setLogoPos]           = useState({ x: 10, y: 10 }); // percent of container
+  // Per-image logo placement maps
+  const [logoScaleMap, setLogoScaleMap] = useState<Record<number, number>>({});
+  const [logoPosMap, setLogoPosMap]     = useState<Record<number, { x: number; y: number }>>({});
   const [logoAspectRatio, setLogoAspectRatio] = useState(1);
+  // Getters for the active image's logo settings
+  const logoScale = logoScaleMap[activeImageIdx] ?? 25;
+  const logoPos   = logoPosMap[activeImageIdx]   ?? { x: 10, y: 10 };
+  // Setters that write into the per-image maps
+  const setLogoScale = (val: number | ((prev: number) => number)) =>
+    setLogoScaleMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? 25) : val }));
+  const setLogoPos = (val: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) =>
+    setLogoPosMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? { x: 10, y: 10 }) : val }));
   const logoDragRef = useRef<{ startX: number; startY: number; startPos: { x: number; y: number } } | null>(null);
   const logoResizeRef = useRef<{ handle: string; startX: number; startY: number; startScale: number; startPos: {x: number; y: number} } | null>(null);
   const logoRef = useRef<HTMLDivElement>(null);
@@ -280,7 +289,8 @@ export default function EditorPage() {
   }, [logoPos, logoScale, logoAspectRatio]);
 
   // ── Compose image + logo on canvas ───────────────────────────────────────────
-  const composeImage = useCallback((base64: string): Promise<string> => {
+  // Compose a single image with a specific logo pos/scale
+  const composeImageWithSettings = useCallback((base64: string, scale: number, pos: { x: number; y: number }): Promise<string> => {
     return new Promise(resolve => {
       if (!companyLogo || !showLogo) { resolve(base64); return; }
       const img = new Image(); img.src = base64;
@@ -291,10 +301,10 @@ export default function EditorPage() {
         ctx.drawImage(img, 0, 0);
         const logo = new Image(); logo.src = companyLogo;
         logo.onload = () => {
-          const lw = (logoScale / 100) * canvas.width;
+          const lw = (scale / 100) * canvas.width;
           const lh = (logo.naturalHeight / logo.naturalWidth) * lw;
-          const lx = (logoPos.x / 100) * canvas.width;
-          const ly = (logoPos.y / 100) * canvas.height;
+          const lx = (pos.x / 100) * canvas.width;
+          const ly = (pos.y / 100) * canvas.height;
           ctx.drawImage(logo, lx, ly, lw, lh);
           resolve(canvas.toDataURL('image/jpeg', 0.9));
         };
@@ -302,22 +312,32 @@ export default function EditorPage() {
       };
       img.onerror = () => resolve(base64);
     });
-  }, [companyLogo, showLogo, logoScale, logoPos]);
+  }, [companyLogo, showLogo]);
+
+  const composeImage = useCallback((base64: string): Promise<string> => {
+    return composeImageWithSettings(base64, logoScale, logoPos);
+  }, [composeImageWithSettings, logoScale, logoPos]);
 
   // ── Publish ──────────────────────────────────────────────────────────────────
   const handlePublishAll = async () => {
     setIsPublishingAll(true); setPublishDone(false);
     
-    // 1. Compose the final image with logo and crop
-    const composedImage = images.length > 0 ? await composeImage(images[activeImageIdx] || images[0]) : null;
-    
-    if (!composedImage) {
+    if (images.length === 0) {
       alert('No image available to publish');
       setIsPublishingAll(false);
       return;
     }
 
-    // 2. Publish to each enabled platform
+    // 1. Compose ALL images with their individual logo placements
+    const composedImages = await Promise.all(
+      images.map((img, idx) => {
+        const scale = logoScaleMap[idx] ?? 25;
+        const pos   = logoPosMap[idx]   ?? { x: 10, y: 10 };
+        return composeImageWithSettings(img, scale, pos);
+      })
+    );
+
+    // 2. Publish to each enabled platform as a single carousel post
     for (const p of platforms) {
       if (!enabledPlatforms[p.id]) continue;
       
@@ -329,7 +349,8 @@ export default function EditorPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             platform: p.id,
-            imageBase64: composedImage,
+            // Send all composed images; API will create a carousel if more than 1
+            images: composedImages,
             caption: captions[p.id] || ''
           })
         });
@@ -337,7 +358,7 @@ export default function EditorPage() {
         if (!res.ok) {
           const errText = await res.text();
           console.error("API Error:", res.status, errText);
-          let msg = errText.substring(0, 50); // limit length
+          let msg = errText.substring(0, 50);
           try { msg = JSON.parse(errText).error || msg; } catch {}
           setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: `Error ${res.status}: ${msg}` } }));
           continue;
@@ -608,7 +629,7 @@ export default function EditorPage() {
 
                     {/* Clear image */}
                     <button
-                      onClick={() => { setImages([]); setActiveImageIdx(0); }}
+                      onClick={() => { setImages([]); setActiveImageIdx(0); setLogoScaleMap({}); setLogoPosMap({}); }}
                       className="btn-ghost"
                       style={{ padding: '6px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px', color: '#f87171' }}
                     >
@@ -622,26 +643,80 @@ export default function EditorPage() {
               {/* Image strip — multi image thumbnails */}
               {images.length > 1 && (
                 <div className="glass-card" style={{ padding: '12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>
-                    Images ({images.length})
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      Carousel ({images.length} images)
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: 600 }}>
+                      Logo positioned per-image
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
-                    {images.map((img, i) => (
+                    {images.map((img, i) => {
+                      const hasCustomLogo = logoScaleMap[i] !== undefined || logoPosMap[i] !== undefined;
+                      return (
                       <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
                         <div
                           onClick={() => setActiveImageIdx(i)}
-                          style={{ width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', border: `2px solid ${i === activeImageIdx ? '#7c3aed' : 'rgba(124,58,237,0.15)'}`, cursor: 'pointer', transition: 'border-color 0.2s' }}
+                          style={{ width: '72px', height: '72px', borderRadius: '10px', overflow: 'hidden', border: `2px solid ${i === activeImageIdx ? '#7c3aed' : 'rgba(124,58,237,0.15)'}`, cursor: 'pointer', transition: 'border-color 0.2s', boxShadow: i === activeImageIdx ? '0 0 0 3px rgba(124,58,237,0.25)' : 'none' }}
                         >
                           <img src={img} alt={`img${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
+                        {/* Logo customized indicator */}
+                        {companyLogo && showLogo && (
+                          <div style={{
+                            position: 'absolute', bottom: 3, left: 3,
+                            width: 16, height: 16, borderRadius: '4px',
+                            background: hasCustomLogo ? 'rgba(124,58,237,0.9)' : 'rgba(0,0,0,0.5)',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '8px', color: 'white', fontWeight: 700,
+                          }} title={hasCustomLogo ? 'Custom logo position set' : 'Default logo position'}>
+                            L
+                          </div>
+                        )}
+                        {/* Image index badge */}
+                        <div style={{
+                          position: 'absolute', bottom: 3, right: -4,
+                          width: 16, height: 16, borderRadius: '50%',
+                          background: i === activeImageIdx ? '#7c3aed' : 'rgba(0,0,0,0.6)',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '9px', color: 'white', fontWeight: 700,
+                        }}>
+                          {i + 1}
+                        </div>
                         <button
-                          onClick={() => { setImages(p => p.filter((_, idx) => idx !== i)); if (activeImageIdx >= i && activeImageIdx > 0) setActiveImageIdx(v => v - 1); }}
+                          onClick={() => {
+                            setImages(p => p.filter((_, idx) => idx !== i));
+                            // Re-key logo maps: remove entry i and shift down higher indices
+                            setLogoScaleMap(prev => {
+                              const next: Record<number, number> = {};
+                              Object.entries(prev).forEach(([k, v]) => {
+                                const ki = Number(k);
+                                if (ki < i) next[ki] = v;
+                                else if (ki > i) next[ki - 1] = v;
+                              });
+                              return next;
+                            });
+                            setLogoPosMap(prev => {
+                              const next: Record<number, { x: number; y: number }> = {};
+                              Object.entries(prev).forEach(([k, v]) => {
+                                const ki = Number(k);
+                                if (ki < i) next[ki] = v;
+                                else if (ki > i) next[ki - 1] = v;
+                              });
+                              return next;
+                            });
+                            if (activeImageIdx >= i && activeImageIdx > 0) setActiveImageIdx(v => v - 1);
+                          }}
                           style={{ position: 'absolute', top: -5, right: -5, width: 16, height: 16, borderRadius: '50%', background: 'rgba(239,68,68,0.8)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
                         >
                           <X size={9} />
                         </button>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

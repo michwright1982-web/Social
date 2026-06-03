@@ -1,7 +1,7 @@
 'use client';
 
 import { Bell, Search, Plus, Sun, Moon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -90,13 +90,25 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
           background: 'var(--input-bg)', border: '1px solid var(--input-border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', color: 'var(--text-secondary)',
-          transition: 'all 0.2s ease',
+          overflow: 'hidden', position: 'relative',
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,58,237,0.4)'; e.currentTarget.style.color = 'var(--accent-violet)'; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--input-border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
         title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       >
-        {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={theme}
+            initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
+            animate={{ rotate: 0,   scale: 1,   opacity: 1 }}
+            exit={{    rotate:  90, scale: 0.5, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            className="no-theme-transition"
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </motion.span>
+        </AnimatePresence>
       </button>
 
       {/* Notification */}
