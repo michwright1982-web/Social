@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Search, Plus, Sun, Moon } from 'lucide-react';
+import { Search, Plus, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -111,24 +111,6 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
         </AnimatePresence>
       </button>
 
-      {/* Notification */}
-      <button style={{
-        width: '36px', height: '36px', borderRadius: '10px',
-        background: 'var(--input-bg)', border: '1px solid var(--input-border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer', position: 'relative', color: 'var(--text-secondary)',
-        transition: 'all 0.2s ease',
-      }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(124,58,237,0.4)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent-violet)'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--input-border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'; }}
-      >
-        <Bell size={15} />
-        <span style={{
-          position: 'absolute', top: '6px', right: '6px',
-          width: '6px', height: '6px', borderRadius: '50%',
-          background: '#7c3aed',
-        }} />
-      </button>
 
       {/* New Campaign CTA */}
       <Link href="/studio" style={{ textDecoration: 'none' }}>

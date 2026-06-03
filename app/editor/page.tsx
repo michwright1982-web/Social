@@ -75,11 +75,11 @@ export default function EditorPage() {
   const [logoPosMap, setLogoPosMap]     = useState<Record<number, { x: number; y: number }>>({});
   const [logoAspectRatio, setLogoAspectRatio] = useState(1);
   // Getters for the active image's logo settings
-  const logoScale = logoScaleMap[activeImageIdx] ?? 25;
+  const logoScale = logoScaleMap[activeImageIdx] ?? null;
   const logoPos   = logoPosMap[activeImageIdx]   ?? null;
   // Setters that write into the per-image maps
   const setLogoScale = (val: number | ((prev: number) => number)) =>
-    setLogoScaleMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? 25) : val }));
+    setLogoScaleMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? 10) : val }));
   const setLogoPos = (val: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) =>
     setLogoPosMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? { x: 75, y: 5 }) : val }));
   const logoDragRef = useRef<{ startX: number; startY: number; startPos: { x: number; y: number } } | null>(null);
@@ -288,10 +288,11 @@ export default function EditorPage() {
   const startLogoDrag = useCallback((e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!imageContainerRef.current) return;
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const effectiveScale = logoScale ?? (50 / rect.width) * 100;
     let startPos = logoPos;
     if (!startPos) {
-      const rect = imageContainerRef.current.getBoundingClientRect();
-      startPos = { x: 100 - logoScale - (20 / rect.width) * 100, y: (20 / rect.height) * 100 };
+      startPos = { x: 100 - effectiveScale - (20 / rect.width) * 100, y: (20 / rect.height) * 100 };
     }
     logoDragRef.current = { startX: e.clientX, startY: e.clientY, startPos: { ...startPos } };
     const onMove = (ev: MouseEvent) => {
@@ -301,8 +302,8 @@ export default function EditorPage() {
       const dx = ((ev.clientX - startX) / rect.width) * 100;
       const dy = ((ev.clientY - startY) / rect.height) * 100;
       setLogoPos({
-        x: Math.max(0, Math.min(100 - logoScale, startPos.x + dx)),
-        y: Math.max(0, Math.min(100 - (logoScale / logoAspectRatio), startPos.y + dy)),
+        x: Math.max(0, Math.min(100 - effectiveScale, startPos.x + dx)),
+        y: Math.max(0, Math.min(100 - (effectiveScale / logoAspectRatio), startPos.y + dy)),
       });
     };
     const onUp = () => { logoDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
@@ -313,12 +314,13 @@ export default function EditorPage() {
   const startLogoResize = useCallback((handle: string, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!imageContainerRef.current) return;
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const effectiveScale = logoScale ?? (50 / rect.width) * 100;
     let startPos = logoPos;
     if (!startPos) {
-      const rect = imageContainerRef.current.getBoundingClientRect();
-      startPos = { x: 100 - logoScale - (20 / rect.width) * 100, y: (20 / rect.height) * 100 };
+      startPos = { x: 100 - effectiveScale - (20 / rect.width) * 100, y: (20 / rect.height) * 100 };
     }
-    logoResizeRef.current = { handle, startX: e.clientX, startY: e.clientY, startScale: logoScale, startPos: { ...startPos } };
+    logoResizeRef.current = { handle, startX: e.clientX, startY: e.clientY, startScale: effectiveScale, startPos: { ...startPos } };
     const onMove = (ev: MouseEvent) => {
       if (!logoResizeRef.current || !imageContainerRef.current) return;
       const { handle, startX, startScale, startPos } = logoResizeRef.current;
@@ -355,7 +357,7 @@ export default function EditorPage() {
 
   // ── Compose image + logo on canvas ───────────────────────────────────────────
   // Compose a single image with a specific logo pos/scale
-  const composeImageWithSettings = useCallback((base64: string, scale: number, pos: { x: number; y: number } | null, hideLogo: boolean): Promise<string> => {
+  const composeImageWithSettings = useCallback((base64: string, scale: number | null, pos: { x: number; y: number } | null, hideLogo: boolean): Promise<string> => {
     return new Promise(resolve => {
       if (!companyLogo || hideLogo) { resolve(base64); return; }
       const img = new Image(); img.src = base64;
@@ -366,7 +368,7 @@ export default function EditorPage() {
         ctx.drawImage(img, 0, 0);
         const logo = new Image(); logo.src = companyLogo;
         logo.onload = () => {
-          const lw = (scale / 100) * canvas.width;
+          const lw = scale ? (scale / 100) * canvas.width : 50;
           const lh = (logo.naturalHeight / logo.naturalWidth) * lw;
           const lx = pos ? (pos.x / 100) * canvas.width : canvas.width - lw - 20;
           const ly = pos ? (pos.y / 100) * canvas.height : 20;
@@ -396,7 +398,7 @@ export default function EditorPage() {
     // 1. Compose ALL images with their individual logo placements
     const composedImages = await Promise.all(
       images.map((img, idx) => {
-        const scale = logoScaleMap[idx] ?? 25;
+        const scale = logoScaleMap[idx] ?? null;
         const pos   = logoPosMap[idx]   ?? null;
         const hideLogo = logoHiddenMap[idx] ?? false;
         return composeImageWithSettings(img, scale, pos, hideLogo);
@@ -521,7 +523,7 @@ export default function EditorPage() {
                             left: logoPos ? `${logoPos.x}%` : undefined,
                             right: logoPos ? undefined : '20px',
                             top: logoPos ? `${logoPos.y}%` : '20px',
-                            width: `${logoScale}%`,
+                            width: logoScale ? `${logoScale}%` : '50px',
                             zIndex: 10,
                             border: '1px solid transparent',
                           }}
