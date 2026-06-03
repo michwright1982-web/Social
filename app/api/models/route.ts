@@ -74,7 +74,15 @@ export async function GET(req: NextRequest) {
             };
           });
           
-          dynamicModels = [...dynamicModels, ...mappedModels];
+          if (mappedModels.length > 0) {
+            dynamicModels = [...dynamicModels, ...mappedModels];
+          } else {
+            // If the API succeeds but doesn't list DALL-E, provide defaults anyway
+            dynamicModels.push(
+              { id: 'dall-e-3', label: 'DALL-E 3', provider: 'OpenAI', badge: 'Latest' },
+              { id: 'dall-e-2', label: 'DALL-E 2', provider: 'OpenAI', badge: 'Legacy' }
+            );
+          }
         } else {
           // If fetch fails, provide hardcoded defaults
           dynamicModels.push(
