@@ -24,6 +24,9 @@ export default function BrandIdentityPage() {
   const [brandContext, setBrandContext] = useState('');
   const [brandFont, setBrandFont] = useState('Inter');
   const [brandColors, setBrandColors] = useState<string[]>(['#7c3aed']);
+  
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -121,12 +124,13 @@ export default function BrandIdentityPage() {
     }
   };
 
-  const handleDeleteCompany = async () => {
+  const executeDelete = async () => {
     if (!activeCompanyId) return;
     
     const newCompanies = companies.filter(c => c.id !== activeCompanyId);
     if (newCompanies.length === 0) {
       showToast('Cannot delete the last company', 'error');
+      setShowDeleteModal(false);
       return;
     }
     
@@ -142,7 +146,14 @@ export default function BrandIdentityPage() {
     });
     
     window.dispatchEvent(new Event('brand-updated'));
+    setShowDeleteModal(false);
+    setDeleteConfirmText('');
     showToast('Company deleted', 'success');
+  };
+
+  const handleDeleteCompany = () => {
+    setDeleteConfirmText('');
+    setShowDeleteModal(true);
   };
 
   return (
@@ -400,6 +411,70 @@ export default function BrandIdentityPage() {
           </div>
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ padding: '32px', width: '100%', maxWidth: '440px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+                <AlertCircle size={20} />
+              </div>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#f8fafc' }}>Delete Workspace?</h2>
+            </div>
+            
+            <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '24px', lineHeight: 1.5 }}>
+              This action cannot be undone. This will permanently delete the <strong>{companyName || 'Unnamed Company'}</strong> brand profile.
+            </p>
+            
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 500 }}>
+                Please type <strong>{companyName || 'Unnamed Company'}</strong> to confirm.
+              </label>
+              <input 
+                type="text" 
+                className="input-field" 
+                value={deleteConfirmText} 
+                onChange={e => setDeleteConfirmText(e.target.value)} 
+                style={{ width: '100%', fontSize: '14px', padding: '12px' }}
+                placeholder={companyName || 'Unnamed Company'}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+                className="btn-ghost" 
+                style={{ padding: '10px 16px', fontSize: '13px' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeDelete} 
+                disabled={deleteConfirmText !== (companyName || 'Unnamed Company')} 
+                className="btn-primary" 
+                style={{ 
+                  padding: '10px 20px', fontSize: '13px', 
+                  background: deleteConfirmText === (companyName || 'Unnamed Company') ? '#ef4444' : 'rgba(239,68,68,0.3)',
+                  borderColor: 'transparent',
+                  color: deleteConfirmText === (companyName || 'Unnamed Company') ? '#fff' : 'rgba(255,255,255,0.4)',
+                  cursor: deleteConfirmText === (companyName || 'Unnamed Company') ? 'pointer' : 'not-allowed'
+                }}
+              >
+                Permanently Delete
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px', background: toast.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${toast.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}` }}>
+            {toast.type === 'success' ? <CheckCircle2 size={18} color="#10b981" /> : <AlertCircle size={18} color="#ef4444" />}
+            <span style={{ fontSize: '14px', fontWeight: 500, color: '#f8fafc' }}>{toast.message}</span>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

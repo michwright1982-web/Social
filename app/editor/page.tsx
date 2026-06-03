@@ -72,13 +72,22 @@ export default function EditorPage() {
 
   // ── Load images & logo from localStorage ────────────────────────────────────
   useEffect(() => {
-    const raw = localStorage.getItem('creative_studio_selected_images');
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setImages(parsed);
-      } catch { setImages([raw]); }
-    }
+    const loadSelectedImages = () => {
+      const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+      const raw = localStorage.getItem(`creative_studio_selected_images_${activeId}`);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setImages(parsed);
+        } catch { setImages([raw]); }
+      } else {
+        setImages([]);
+      }
+    };
+
+    loadSelectedImages();
+    window.addEventListener('brand-updated', loadSelectedImages);
+    return () => window.removeEventListener('brand-updated', loadSelectedImages);
   }, []);
 
   useEffect(() => {

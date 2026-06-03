@@ -102,6 +102,7 @@ export default function StudioPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
   
@@ -109,17 +110,34 @@ export default function StudioPage() {
   const [aiModels, setAiModels] = useState<any[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
 
-  useEffect(() => {
-    // Load history on mount
-    const historyData = localStorage.getItem('creative_studio_history');
+  const loadHistory = useCallback(() => {
+    const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+    setActiveCompanyId(activeId);
+    
+    // Migration from old global key to company-specific key
+    const oldHistory = localStorage.getItem('creative_studio_history');
+    if (oldHistory) {
+      localStorage.setItem(`creative_studio_history_${activeId}`, oldHistory);
+      localStorage.removeItem('creative_studio_history');
+    }
+
+    const historyData = localStorage.getItem(`creative_studio_history_${activeId}`);
     if (historyData) {
       try {
         setGeneratedImages(JSON.parse(historyData));
       } catch (e) {
-        console.error('Failed to parse history', e);
+        setGeneratedImages([]);
       }
+    } else {
+      setGeneratedImages([]);
     }
   }, []);
+
+  useEffect(() => {
+    loadHistory();
+    window.addEventListener('brand-updated', loadHistory);
+    return () => window.removeEventListener('brand-updated', loadHistory);
+  }, [loadHistory]);
 
   useEffect(() => {
     fetch('/api/models')
@@ -224,7 +242,8 @@ export default function StudioPage() {
         setGeneratedImages(prev => {
           const updated = [...newHistoryItems, ...prev].slice(0, 20);
           try {
-            localStorage.setItem('creative_studio_history', JSON.stringify(updated));
+            const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+            localStorage.setItem(`creative_studio_history_${currentCompanyId}`, JSON.stringify(updated));
           } catch (e) {
             console.warn('Failed to save to localStorage', e);
           }
@@ -255,7 +274,8 @@ export default function StudioPage() {
     setGeneratedImages(prev => {
       const updated = prev.filter(img => img.id !== id);
       try {
-        localStorage.setItem('creative_studio_history', JSON.stringify(updated));
+        const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+        localStorage.setItem(`creative_studio_history_${currentCompanyId}`, JSON.stringify(updated));
       } catch (e) {
         console.warn('Failed to update localStorage', e);
       }
@@ -641,7 +661,8 @@ export default function StudioPage() {
                                   .filter(Boolean) as string[];
                                 if (selectedUrls.length > 0) {
                                   try {
-                                    localStorage.setItem('creative_studio_selected_images', JSON.stringify(selectedUrls));
+                                    const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                                    localStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(selectedUrls));
                                   } catch (e) {
                                     console.warn('Failed to save selected images to localStorage', e);
                                   }
