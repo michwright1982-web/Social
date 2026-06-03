@@ -76,12 +76,12 @@ export default function EditorPage() {
   const [logoAspectRatio, setLogoAspectRatio] = useState(1);
   // Getters for the active image's logo settings
   const logoScale = logoScaleMap[activeImageIdx] ?? 25;
-  const logoPos   = logoPosMap[activeImageIdx]   ?? { x: 10, y: 10 };
+  const logoPos   = logoPosMap[activeImageIdx]   ?? null;
   // Setters that write into the per-image maps
   const setLogoScale = (val: number | ((prev: number) => number)) =>
     setLogoScaleMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? 25) : val }));
   const setLogoPos = (val: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) =>
-    setLogoPosMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? { x: 10, y: 10 }) : val }));
+    setLogoPosMap(prev => ({ ...prev, [activeImageIdx]: typeof val === 'function' ? val(prev[activeImageIdx] ?? { x: 75, y: 5 }) : val }));
   const logoDragRef = useRef<{ startX: number; startY: number; startPos: { x: number; y: number } } | null>(null);
   const logoResizeRef = useRef<{ handle: string; startX: number; startY: number; startScale: number; startPos: {x: number; y: number} } | null>(null);
   const logoRef = useRef<HTMLDivElement>(null);
@@ -120,13 +120,12 @@ export default function EditorPage() {
         const active = companies.find((c) => c.id === activeId);
         if (active && active.logo) {
           setCompanyLogo(active.logo);
-          setShowLogo(true);
+          setLogoHiddenMap({});
           return;
         }
       }
       // Fallback or empty
       setCompanyLogo(null);
-      setShowLogo(false);
     };
 
     loadActiveCompanyLogo();
@@ -289,7 +288,12 @@ export default function EditorPage() {
   const startLogoDrag = useCallback((e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!imageContainerRef.current) return;
-    logoDragRef.current = { startX: e.clientX, startY: e.clientY, startPos: { ...logoPos } };
+    let startPos = logoPos;
+    if (!startPos) {
+      const rect = imageContainerRef.current.getBoundingClientRect();
+      startPos = { x: 100 - logoScale - (20 / rect.width) * 100, y: (20 / rect.height) * 100 };
+    }
+    logoDragRef.current = { startX: e.clientX, startY: e.clientY, startPos: { ...startPos } };
     const onMove = (ev: MouseEvent) => {
       if (!logoDragRef.current || !imageContainerRef.current) return;
       const { startX, startY, startPos } = logoDragRef.current;
@@ -309,7 +313,12 @@ export default function EditorPage() {
   const startLogoResize = useCallback((handle: string, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!imageContainerRef.current) return;
-    logoResizeRef.current = { handle, startX: e.clientX, startY: e.clientY, startScale: logoScale, startPos: { ...logoPos } };
+    let startPos = logoPos;
+    if (!startPos) {
+      const rect = imageContainerRef.current.getBoundingClientRect();
+      startPos = { x: 100 - logoScale - (20 / rect.width) * 100, y: (20 / rect.height) * 100 };
+    }
+    logoResizeRef.current = { handle, startX: e.clientX, startY: e.clientY, startScale: logoScale, startPos: { ...startPos } };
     const onMove = (ev: MouseEvent) => {
       if (!logoResizeRef.current || !imageContainerRef.current) return;
       const { handle, startX, startScale, startPos } = logoResizeRef.current;
@@ -346,7 +355,7 @@ export default function EditorPage() {
 
   // ── Compose image + logo on canvas ───────────────────────────────────────────
   // Compose a single image with a specific logo pos/scale
-  const composeImageWithSettings = useCallback((base64: string, scale: number, pos: { x: number; y: number }, hideLogo: boolean): Promise<string> => {
+  const composeImageWithSettings = useCallback((base64: string, scale: number, pos: { x: number; y: number } | null, hideLogo: boolean): Promise<string> => {
     return new Promise(resolve => {
       if (!companyLogo || hideLogo) { resolve(base64); return; }
       const img = new Image(); img.src = base64;
@@ -359,8 +368,8 @@ export default function EditorPage() {
         logo.onload = () => {
           const lw = (scale / 100) * canvas.width;
           const lh = (logo.naturalHeight / logo.naturalWidth) * lw;
-          const lx = (pos.x / 100) * canvas.width;
-          const ly = (pos.y / 100) * canvas.height;
+          const lx = pos ? (pos.x / 100) * canvas.width : canvas.width - lw - 20;
+          const ly = pos ? (pos.y / 100) * canvas.height : 20;
           ctx.drawImage(logo, lx, ly, lw, lh);
           resolve(canvas.toDataURL('image/jpeg', 0.9));
         };
@@ -388,7 +397,7 @@ export default function EditorPage() {
     const composedImages = await Promise.all(
       images.map((img, idx) => {
         const scale = logoScaleMap[idx] ?? 25;
-        const pos   = logoPosMap[idx]   ?? { x: 10, y: 10 };
+        const pos   = logoPosMap[idx]   ?? null;
         const hideLogo = logoHiddenMap[idx] ?? false;
         return composeImageWithSettings(img, scale, pos, hideLogo);
       })
@@ -509,7 +518,9 @@ export default function EditorPage() {
                           ref={logoRef}
                           style={{
                             position: 'absolute',
-                            left: `${logoPos.x}%`, top: `${logoPos.y}%`,
+                            left: logoPos ? `${logoPos.x}%` : undefined,
+                            right: logoPos ? undefined : '20px',
+                            top: logoPos ? `${logoPos.y}%` : '20px',
                             width: `${logoScale}%`,
                             zIndex: 10,
                             border: '1px solid transparent',
