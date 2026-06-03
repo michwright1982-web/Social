@@ -9,7 +9,7 @@ import {
   Loader2, Hash, AtSign, Clock, Zap, Globe, ImageIcon, Upload, X,
   Crop, Eye, EyeOff,
 } from 'lucide-react';
-import { loadFromImageDB } from '@/lib/image-db';
+import { loadFromImageDB, saveToImageDB } from '@/lib/image-db';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
 
@@ -18,7 +18,7 @@ import Link from 'next/link';
 const platforms = [
   { id: 'facebook',  label: 'Facebook',   icon: FacebookIcon,   color: '#1877F2', charLimit: 63206, tip: 'Longer posts with storytelling work best. Use emojis & strong CTAs.', maxHashtags: 10,  aspectRatio: '1.91:1' },
   { id: 'instagram', label: 'Instagram',  icon: InstagramIcon,  color: '#E1306C', charLimit: 2200,  tip: 'Punchy first line, heavy hashtags (up to 30), emojis encouraged.',    maxHashtags: 30,  aspectRatio: '1:1'    },
-  { id: 'x',         label: 'X (Twitter)',icon: XSocialIcon,    color: '#ffffff', charLimit: 280,   tip: 'Short & punchy. Max 280 chars. 1-2 hashtags is ideal.',               maxHashtags: 2,   aspectRatio: '16:9'   },
+  { id: 'x',         label: 'X (Twitter)',icon: XSocialIcon,    color: 'currentColor', charLimit: 280,   tip: 'Short & punchy. Max 280 chars. 1-2 hashtags is ideal.',               maxHashtags: 2,   aspectRatio: '16:9'   },
   { id: 'linkedin',  label: 'LinkedIn',   icon: LinkedinIcon,   color: '#0A66C2', charLimit: 3000,  tip: 'Professional tone. Thought leadership stories convert best.',          maxHashtags: 5,   aspectRatio: '1.91:1' },
 ];
 
@@ -50,9 +50,14 @@ export default function EditorPage() {
     Object.fromEntries(platforms.map(p => [p.id, true]))
   );
 
-  // ── Images ──────────────────────────────────────────────────────────────────
+  // ── Images ──────────────────────────────────────────────────────────────
   const [images, setImages] = useState<string[]>([]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  // ── Add-Image dropdown & Studio picker modal ───────────────────────────────────
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showStudioPicker, setShowStudioPicker] = useState(false);
+  const [studioImages, setStudioImages] = useState<{ id: string; url: string }[]>([]);
 
   // ── Crop state ──────────────────────────────────────────────────────────────
   const [isCropping, setIsCropping]   = useState(false);
@@ -139,6 +144,51 @@ export default function EditorPage() {
     };
     reader.readAsDataURL(file);
     e.target.value = '';
+  };
+
+  // ── Studio picker ─────────────────────────────────────────────────────────────
+  const openStudioPicker = async () => {
+    const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+    const history = await loadFromImageDB(`creative_studio_history_${activeId}`);
+    if (Array.isArray(history)) {
+      setStudioImages(history.filter((h: { url?: string }) => h?.url).map((h: { id: string; url: string }) => ({ id: h.id, url: h.url })));
+    } else {
+      setStudioImages([]);
+    }
+    setShowAddMenu(false);
+    setShowStudioPicker(true);
+  };
+
+  // Sync a removed image URL back to the studio's selected-images IndexedDB
+  const syncRemoveToStudio = async (removedUrl: string) => {
+    try {
+      const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+      const key = `creative_studio_selected_images_${activeId}`;
+      const saved = await loadFromImageDB(key);
+      if (Array.isArray(saved)) {
+        const updated = saved.filter((u: string) => u !== removedUrl);
+        await saveToImageDB(key, updated);
+        sessionStorage.setItem(key, JSON.stringify(updated));
+      }
+    } catch { /* best-effort */ }
+  };
+
+  // Remove image from editor strip + deselect in studio
+  const handleRemoveImage = (idx: number) => {
+    const removedUrl = images[idx];
+    setImages(prev => prev.filter((_, i) => i !== idx));
+    setLogoScaleMap(prev => {
+      const next: Record<number, number> = {};
+      Object.entries(prev).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) next[ki] = v; else if (ki > idx) next[ki - 1] = v; });
+      return next;
+    });
+    setLogoPosMap(prev => {
+      const next: Record<number, { x: number; y: number }> = {};
+      Object.entries(prev).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) next[ki] = v; else if (ki > idx) next[ki - 1] = v; });
+      return next;
+    });
+    if (activeImageIdx >= idx && activeImageIdx > 0) setActiveImageIdx(v => v - 1);
+    syncRemoveToStudio(removedUrl);
   };
 
   // ── Caption generation ───────────────────────────────────────────────────────
@@ -411,15 +461,16 @@ export default function EditorPage() {
   // ─── JSX ──────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="app-layout">
-      <Sidebar />
-      <div className="main-content">
+    <>
+      <div className="app-layout">
+        <Sidebar />
+        <div className="main-content">
         <Topbar title="Unified Editor" subtitle="Compose, brand & publish to all platforms" />
         <div className="page-content" style={{ paddingBottom: '32px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '540px 1fr', gap: '24px', alignItems: 'start', maxWidth: '1300px' }}>
 
             {/* ══════════════════════ LEFT — Image Canvas ══════════════════════ */}
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: [0.4,0,0.2,1] }}
               style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
               {/* Image canvas */}
@@ -589,11 +640,57 @@ export default function EditorPage() {
                 {/* Toolbar */}
                 {activeImage && (
                   <div style={{ padding: '12px 16px', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--topbar-bg)', overflowX: 'auto' }}>
-                    {/* Upload more */}
-                    <label title="Upload image" className="btn-ghost" style={{ padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Upload size={12} /> Add Image
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
-                    </label>
+
+                    {/* ── Add Image dropdown ── */}
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        title="Add image"
+                        onClick={() => setShowAddMenu(v => !v)}
+                        className="btn-ghost"
+                        style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                      >
+                        <Upload size={12} /> Add Image
+                      </button>
+                      <AnimatePresence>
+                        {showAddMenu && (
+                          <>
+                            {/* backdrop */}
+                            <div onClick={() => setShowAddMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                              transition={{ duration: 0.15 }}
+                              style={{
+                                position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
+                                zIndex: 50, minWidth: '140px',
+                                background: 'var(--bg-card)', border: '1px solid var(--glass-border)',
+                                borderRadius: '10px', overflow: 'hidden',
+                                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                              }}
+                            >
+                              <label
+                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(124,58,237,0.08)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <Upload size={13} color="#7c3aed" /> Local File
+                                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { handleImageUpload(e); setShowAddMenu(false); }} />
+                              </label>
+                              <div style={{ height: '1px', background: 'var(--glass-border)' }} />
+                              <button
+                                onClick={openStudioPicker}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(124,58,237,0.08)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <Sparkles size={13} color="#7c3aed" /> From Studio
+                              </button>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
                     {/* Crop */}
                     <button
@@ -687,29 +784,7 @@ export default function EditorPage() {
                           {i + 1}
                         </div>
                         <button
-                          onClick={() => {
-                            setImages(p => p.filter((_, idx) => idx !== i));
-                            // Re-key logo maps: remove entry i and shift down higher indices
-                            setLogoScaleMap(prev => {
-                              const next: Record<number, number> = {};
-                              Object.entries(prev).forEach(([k, v]) => {
-                                const ki = Number(k);
-                                if (ki < i) next[ki] = v;
-                                else if (ki > i) next[ki - 1] = v;
-                              });
-                              return next;
-                            });
-                            setLogoPosMap(prev => {
-                              const next: Record<number, { x: number; y: number }> = {};
-                              Object.entries(prev).forEach(([k, v]) => {
-                                const ki = Number(k);
-                                if (ki < i) next[ki] = v;
-                                else if (ki > i) next[ki - 1] = v;
-                              });
-                              return next;
-                            });
-                            if (activeImageIdx >= i && activeImageIdx > 0) setActiveImageIdx(v => v - 1);
-                          }}
+                          onClick={() => handleRemoveImage(i)}
                           style={{ position: 'absolute', top: -5, right: -5, width: 16, height: 16, borderRadius: '50%', background: 'rgba(239,68,68,0.8)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
                         >
                           <X size={9} />
@@ -936,5 +1011,98 @@ export default function EditorPage() {
         </div>
       </div>
     </div>
+
+    {/* ══════════════════ STUDIO PICKER MODAL ══════════════════ */}
+    <AnimatePresence>
+      {showStudioPicker && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={() => setShowStudioPicker(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: [0.4,0,0.2,1] }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '720px', maxWidth: '95vw', maxHeight: '80vh',
+              background: 'var(--bg-card)', border: '1px solid var(--glass-border)',
+              borderRadius: '20px', display: 'flex', flexDirection: 'column',
+              overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)',
+            }}
+          >
+            {/* Modal header */}
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={16} color="#7c3aed" /> Studio Gallery
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  Click an image to add it to your editor ({images.length}/5 selected)
+                </div>
+              </div>
+              <button
+                onClick={() => setShowStudioPicker(false)}
+                style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--input-bg)', border: '1px solid var(--input-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Modal body — image grid */}
+            <div style={{ overflowY: 'auto', padding: '20px 24px', flex: 1 }}>
+              {studioImages.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                  <ImageIcon size={32} style={{ marginBottom: '12px', opacity: 0.4 }} />
+                  <div style={{ fontSize: '14px' }}>No images in your Studio yet.</div>
+                  <div style={{ fontSize: '12px', marginTop: '4px' }}>Generate images in the AI Studio first.</div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+                  {studioImages.map(si => {
+                    const alreadyAdded = images.includes(si.url);
+                    return (
+                      <motion.div
+                        key={si.id}
+                        whileHover={{ scale: alreadyAdded ? 1 : 1.03 }}
+                        onClick={() => {
+                          if (alreadyAdded) return;
+                          if (images.length >= 5) return;
+                          setImages(prev => [...prev, si.url]);
+                          setShowStudioPicker(false);
+                        }}
+                        style={{
+                          position: 'relative', borderRadius: '12px', overflow: 'hidden',
+                          aspectRatio: '1/1', cursor: alreadyAdded ? 'default' : 'pointer',
+                          border: alreadyAdded ? '2px solid #7c3aed' : '2px solid transparent',
+                          opacity: alreadyAdded ? 0.6 : 1,
+                        }}
+                      >
+                        <img src={si.url} alt="studio" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        {alreadyAdded && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(124,58,237,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Check size={20} color="white" strokeWidth={3} />
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }
