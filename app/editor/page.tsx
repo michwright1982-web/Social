@@ -474,7 +474,7 @@ export default function EditorPage() {
               style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
               {/* Image canvas */}
-              <div className="glass-card" style={{ overflow: 'hidden' }}>
+              <div className="glass-card" style={{ position: 'relative', zIndex: 10 }}>
                 {/* Canvas area */}
                 <div
                   ref={imageContainerRef}
@@ -639,7 +639,7 @@ export default function EditorPage() {
 
                 {/* Toolbar */}
                 {activeImage && (
-                  <div style={{ padding: '12px 16px', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--topbar-bg)', overflowX: 'auto' }}>
+                  <div style={{ padding: '12px 16px', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--topbar-bg)', flexWrap: 'wrap' }}>
 
                     {/* ── Add Image dropdown ── */}
                     <div style={{ position: 'relative' }}>
@@ -663,10 +663,10 @@ export default function EditorPage() {
                               transition={{ duration: 0.15 }}
                               style={{
                                 position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
-                                zIndex: 50, minWidth: '140px',
+                                zIndex: 100, minWidth: '150px',
                                 background: 'var(--bg-card)', border: '1px solid var(--glass-border)',
                                 borderRadius: '10px', overflow: 'hidden',
-                                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                                boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
                               }}
                             >
                               <label
