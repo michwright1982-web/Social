@@ -68,7 +68,8 @@ export default function EditorPage() {
 
   // ── Logo state ──────────────────────────────────────────────────────────────
   const [companyLogo, setCompanyLogo]   = useState<string | null>(null);
-  const [showLogo, setShowLogo]         = useState(true);
+  const [logoHiddenMap, setLogoHiddenMap] = useState<Record<number, boolean>>({});
+  const showLogo = !(logoHiddenMap[activeImageIdx] ?? false);
   // Per-image logo placement maps
   const [logoScaleMap, setLogoScaleMap] = useState<Record<number, number>>({});
   const [logoPosMap, setLogoPosMap]     = useState<Record<number, { x: number; y: number }>>({});
@@ -184,6 +185,11 @@ export default function EditorPage() {
     });
     setLogoPosMap(prev => {
       const next: Record<number, { x: number; y: number }> = {};
+      Object.entries(prev).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) next[ki] = v; else if (ki > idx) next[ki - 1] = v; });
+      return next;
+    });
+    setLogoHiddenMap(prev => {
+      const next: Record<number, boolean> = {};
       Object.entries(prev).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) next[ki] = v; else if (ki > idx) next[ki - 1] = v; });
       return next;
     });
@@ -340,9 +346,9 @@ export default function EditorPage() {
 
   // ── Compose image + logo on canvas ───────────────────────────────────────────
   // Compose a single image with a specific logo pos/scale
-  const composeImageWithSettings = useCallback((base64: string, scale: number, pos: { x: number; y: number }): Promise<string> => {
+  const composeImageWithSettings = useCallback((base64: string, scale: number, pos: { x: number; y: number }, hideLogo: boolean): Promise<string> => {
     return new Promise(resolve => {
-      if (!companyLogo || !showLogo) { resolve(base64); return; }
+      if (!companyLogo || hideLogo) { resolve(base64); return; }
       const img = new Image(); img.src = base64;
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -362,11 +368,11 @@ export default function EditorPage() {
       };
       img.onerror = () => resolve(base64);
     });
-  }, [companyLogo, showLogo]);
+  }, [companyLogo]);
 
   const composeImage = useCallback((base64: string): Promise<string> => {
-    return composeImageWithSettings(base64, logoScale, logoPos);
-  }, [composeImageWithSettings, logoScale, logoPos]);
+    return composeImageWithSettings(base64, logoScale, logoPos, !showLogo);
+  }, [composeImageWithSettings, logoScale, logoPos, showLogo]);
 
   // ── Publish ──────────────────────────────────────────────────────────────────
   const handlePublishAll = async () => {
@@ -383,7 +389,8 @@ export default function EditorPage() {
       images.map((img, idx) => {
         const scale = logoScaleMap[idx] ?? 25;
         const pos   = logoPosMap[idx]   ?? { x: 10, y: 10 };
-        return composeImageWithSettings(img, scale, pos);
+        const hideLogo = logoHiddenMap[idx] ?? false;
+        return composeImageWithSettings(img, scale, pos, hideLogo);
       })
     );
 
@@ -716,7 +723,7 @@ export default function EditorPage() {
                     {companyLogo && (
                       <button
                         title={showLogo ? 'Hide logo' : 'Show logo'}
-                        onClick={() => setShowLogo(v => !v)}
+                        onClick={() => setLogoHiddenMap(prev => ({ ...prev, [activeImageIdx]: !prev[activeImageIdx] }))}
                         className="btn-ghost"
                         style={{ padding: '6px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px', color: showLogo ? '#a78bfa' : 'var(--text-muted)' }}
                       >
@@ -727,7 +734,7 @@ export default function EditorPage() {
                     {/* Clear image */}
                     <button
                       onClick={async () => {
-                        setImages([]); setActiveImageIdx(0); setLogoScaleMap({}); setLogoPosMap({});
+                        setImages([]); setActiveImageIdx(0); setLogoScaleMap({}); setLogoPosMap({}); setLogoHiddenMap({});
                         try {
                           const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
                           const key = `creative_studio_selected_images_${activeId}`;
@@ -768,7 +775,7 @@ export default function EditorPage() {
                           <img src={img} alt={`img${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         {/* Logo customized indicator */}
-                        {companyLogo && showLogo && (
+                        {companyLogo && !(logoHiddenMap[i] ?? false) && (
                           <div style={{
                             position: 'absolute', bottom: 3, left: 3,
                             width: 16, height: 16, borderRadius: '4px',
@@ -1109,6 +1116,17 @@ export default function EditorPage() {
                   })}
                 </div>
               )}
+            </div>
+
+            {/* Modal footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'flex-end', background: 'var(--bg-card)' }}>
+              <button
+                onClick={() => setShowStudioPicker(false)}
+                className="btn-primary"
+                style={{ padding: '8px 24px', fontSize: '13px', fontWeight: 600, borderRadius: '8px' }}
+              >
+                Done
+              </button>
             </div>
           </motion.div>
         </motion.div>
