@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Buffer } from 'buffer';
 import { decryptToken } from '@/lib/oauth-token';
 
 interface ApiKey {
@@ -258,8 +259,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Image generation for ${provider} is not implemented yet.` }, { status: 400 });
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[studio/generate] Error:', error);
-    return NextResponse.json({ error: 'Failed to generate image due to an internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: `Failed to generate image due to an internal server error: ${error?.message || String(error)}` }, { status: 500 });
   }
 }
