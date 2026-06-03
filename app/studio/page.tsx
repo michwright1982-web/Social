@@ -6,11 +6,10 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import {
-  Upload, Wand2, Sparkles, ChevronDown, Zap, RefreshCw,
-  Check, Maximize2, RotateCcw, Image as ImageIcon, X,
-  Sliders, Globe, Languages, ArrowRight, Loader2, AlertCircle, Trash2, Send
+  Upload, Wand2, Sparkles, Zap, RefreshCw,
+  Check, RotateCcw, Image as ImageIcon, X,
+  Sliders, Loader2, AlertCircle, Trash2, Send
 } from 'lucide-react';
-import Link from 'next/link';
 import { saveToImageDB, loadFromImageDB } from '@/lib/image-db';
 
 // Dynamic models will be fetched from the backend.
@@ -92,8 +91,7 @@ export interface AiModel {
   badge: string;
 }
 
-// Placeholder generated images — replace with real AI output in production
-const GENERATED_IMAGES: string[] = [];
+
 
 export default function StudioPage() {
   const router = useRouter();
@@ -108,20 +106,20 @@ export default function StudioPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedVariations, setSelectedVariations] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
   
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
   const [aiModels, setAiModels] = useState<AiModel[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
+  const [animateHistoryEntrance, setAnimateHistoryEntrance] = useState(false);
+  const [openAiSize, setOpenAiSize] = useState('auto');
+  const [openAiQuality, setOpenAiQuality] = useState('auto');
 
   const loadHistory = useCallback(async () => {
     const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-    setActiveCompanyId(activeId);
     
     // Check if we need to migrate existing localStorage data to IndexedDB
     let dbHistory = await loadFromImageDB(`creative_studio_history_${activeId}`);
@@ -184,6 +182,7 @@ export default function StudioPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadHistory();
     window.addEventListener('brand-updated', loadHistory);
     return () => window.removeEventListener('brand-updated', loadHistory);
@@ -239,6 +238,7 @@ export default function StudioPage() {
     setProgress(0);
     setSelectedVariations([]);
     setErrorMsg(null);
+    setAnimateHistoryEntrance(false);
     // Remove setGeneratedImages([]) so we retain history
 
     // Start a fake progress bar while the request runs
@@ -264,7 +264,9 @@ export default function StudioPage() {
           style: selectedStyleObj?.name || selectedStyle,
           styleRules: selectedStyleObj?.rules || '',
           ratio: aspectRatio,
-          variations: numVariations
+          variations: numVariations,
+          openAiSize,
+          openAiQuality
         })
       });
 
@@ -306,6 +308,10 @@ export default function StudioPage() {
       }
       
       setState('done');
+      setAnimateHistoryEntrance(true);
+      setTimeout(() => {
+        setAnimateHistoryEntrance(false);
+      }, 2000);
     } catch (err: unknown) {
       clearInterval(interval);
       setState('idle');
@@ -313,11 +319,6 @@ export default function StudioPage() {
     }
   };
 
-  const handleReset = () => {
-    setState('idle');
-    setProgress(0);
-    setSelectedVariations([]);
-  };
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -368,10 +369,10 @@ export default function StudioPage() {
             {/* Art Style Studio Section */}
             <div style={{ marginBottom: '40px' }}>
               <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Outfit', sans-serif" }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Outfit', sans-serif" }}>
                   <Sparkles size={18} color="#7c3aed" /> Art Style Studio
                 </h2>
-                <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                   Select a premium, high-converting visual style to instantly inject optimized AI rendering rules into your poster.
                 </p>
               </div>
@@ -384,8 +385,8 @@ export default function StudioPage() {
                       key={style.id}
                       onClick={() => setSelectedStyle(style.id)}
                       style={{
-                        background: isSelected ? 'rgba(124, 58, 237, 0.08)' : 'rgba(15, 22, 36, 0.4)',
-                        border: isSelected ? '2px solid #7c3aed' : '1px solid rgba(71, 85, 105, 0.2)',
+                        background: isSelected ? 'rgba(124, 58, 237, 0.08)' : 'var(--input-bg)',
+                        border: isSelected ? '2px solid #7c3aed' : '1px solid var(--input-border)',
                         borderRadius: '16px',
                         padding: '12px',
                         cursor: 'pointer',
@@ -400,18 +401,18 @@ export default function StudioPage() {
                       onMouseEnter={(e) => {
                         if (!isSelected) {
                           e.currentTarget.style.border = '1px solid rgba(124, 58, 237, 0.4)';
-                          e.currentTarget.style.background = 'rgba(15, 22, 36, 0.6)';
+                          e.currentTarget.style.background = 'var(--input-bg)';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.border = '1px solid rgba(71, 85, 105, 0.2)';
-                          e.currentTarget.style.background = 'rgba(15, 22, 36, 0.4)';
+                          e.currentTarget.style.border = '1px solid var(--input-border)';
+                          e.currentTarget.style.background = 'var(--input-bg)';
                         }
                       }}
                     >
                       {/* Preview Thumbnail */}
-                      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '10px', overflow: 'hidden', background: '#090d16' }}>
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '10px', overflow: 'hidden', background: 'var(--bg-primary)' }}>
                         <img
                           src={style.sampleImage}
                           alt={style.name}
@@ -437,19 +438,19 @@ export default function StudioPage() {
                             width: '22px',
                             height: '22px',
                             borderRadius: '50%',
-                            background: 'rgba(15, 22, 36, 0.75)',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            background: 'var(--input-bg)',
+                            border: '1px solid var(--glass-border)',
                             backdropFilter: 'blur(4px)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
                             zIndex: 3,
-                            color: '#94a3b8',
+                            color: 'var(--text-muted)',
                             transition: 'all 0.2s',
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = '#e2e8f0'; e.currentTarget.style.background = 'rgba(15, 22, 36, 0.9)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(15, 22, 36, 0.75)'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--input-bg)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--input-bg)'; }}
                         >
                           <Sliders size={11} />
                         </div>
@@ -457,8 +458,8 @@ export default function StudioPage() {
 
                       {/* Style Info */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: isSelected ? '#a78bfa' : '#cbd5e1', transition: 'color 0.2s' }}>{style.name}</h3>
-                        <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.4' }}>{style.description}</p>
+                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: isSelected ? '#a78bfa' : 'var(--text-primary)', transition: 'color 0.2s' }}>{style.name}</h3>
+                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{style.description}</p>
                       </div>
                       
                       {/* Rules modal is rendered at the top level below */}
@@ -498,11 +499,11 @@ export default function StudioPage() {
                       onClick={e => e.stopPropagation()}
                       style={{
                         width: '100%', maxWidth: '560px',
-                        background: 'rgba(13, 17, 30, 0.98)',
-                        border: '1px solid rgba(124, 58, 237, 0.35)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--glass-border)',
                         backdropFilter: 'blur(24px)',
                         borderRadius: '20px',
-                        boxShadow: '0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06)',
+                        boxShadow: '0 32px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
                         overflow: 'hidden',
                       }}
                     >
@@ -510,7 +511,7 @@ export default function StudioPage() {
                       <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '20px 24px 16px',
-                        borderBottom: '1px solid rgba(124, 58, 237, 0.12)',
+                        borderBottom: '1px solid var(--glass-border)',
                         background: 'rgba(124, 58, 237, 0.05)',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -518,20 +519,20 @@ export default function StudioPage() {
                             <Sliders size={15} color="#a78bfa" />
                           </div>
                           <div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{activeStyle.name}</div>
-                            <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: '1px' }}>AI Style Rules</div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{activeStyle.name}</div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: '1px' }}>AI Style Rules</div>
                           </div>
                         </div>
                         <button
                           onClick={() => setActiveTooltip(null)}
                           style={{
                             width: '32px', height: '32px', borderRadius: '10px',
-                            background: 'rgba(71,85,105,0.2)', border: '1px solid rgba(71,85,105,0.3)',
-                            color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)',
+                            color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0,
                           }}
                           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(71,85,105,0.2)'; e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'rgba(71,85,105,0.3)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--glass-border)'; }}
                         >
                           <X size={14} />
                         </button>
@@ -540,7 +541,7 @@ export default function StudioPage() {
                       {/* Modal Body */}
                       <div style={{ padding: '20px 24px 24px', maxHeight: '60vh', overflowY: 'auto' }}>
                         <div style={{
-                          fontSize: '13px', color: '#94a3b8', lineHeight: '1.75',
+                          fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.75',
                           whiteSpace: 'pre-wrap', fontFamily: "'Inter', sans-serif",
                         }}>
                           {activeStyle.rules}
@@ -550,10 +551,10 @@ export default function StudioPage() {
                       {/* Modal Footer */}
                       <div style={{
                         padding: '14px 24px',
-                        borderTop: '1px solid rgba(71,85,105,0.15)',
+                        borderTop: '1px solid var(--glass-border)',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       }}>
-                        <span style={{ fontSize: '11px', color: '#475569' }}>Click outside or press Esc to close</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Click outside or press Esc to close</span>
                         <button
                           onClick={() => setActiveTooltip(null)}
                           className="btn-secondary"
@@ -584,8 +585,8 @@ export default function StudioPage() {
                       <Sparkles size={28} color="#7c3aed" />
                     </div>
                   </motion.div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#e2e8f0', fontFamily: "'Outfit', sans-serif" }}>Ready to Create</h2>
-                  <p style={{ fontSize: '14px', color: '#64748b', marginTop: '8px', maxWidth: '340px', lineHeight: 1.6 }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Ready to Create</h2>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '340px', lineHeight: 1.6 }}>
                     Upload a reference design, craft your prompt, and let AI generate stunning variations tailored to your campaign.
                   </p>
                 </div>
@@ -595,7 +596,7 @@ export default function StudioPage() {
                 <div ref={galleryRef} style={{ scrollMarginTop: '100px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
-                      <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>
+                      <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                         Creative History
                         {state === 'done' && (
                           <span className="badge badge-green" style={{ marginLeft: '10px', fontSize: '10px', verticalAlign: 'middle' }}>
@@ -630,7 +631,7 @@ export default function StudioPage() {
                         className="masonry-item"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i < numVariations && state === 'done' ? i * 0.1 : 0, duration: 0.4 }}
+                        transition={{ delay: i < numVariations && animateHistoryEntrance ? i * 0.1 : 0, duration: 0.4 }}
                       >
                         <div
                           id={`variation-${img.id}`}
@@ -707,13 +708,13 @@ export default function StudioPage() {
                         exit={{ opacity: 0, y: 20 }}
                         style={{ position: 'fixed', bottom: '210px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}
                       >
-                        <div className="glass-card" style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', background: 'rgba(15,22,36,0.95)', border: '1px solid rgba(124,58,237,0.3)', backdropFilter: 'blur(20px)' }}>
+                        <div className="glass-card" style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(20px)' }}>
                           <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <ImageIcon size={16} color="#7c3aed" />
                           </div>
                           <div>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>{selectedVariations.length} image{selectedVariations.length > 1 ? 's' : ''} selected</div>
-                            <div style={{ fontSize: '11px', color: '#64748b' }}>Ready to generate captions & publish</div>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{selectedVariations.length} image{selectedVariations.length > 1 ? 's' : ''} selected</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ready to generate captions & publish</div>
                           </div>
                           <div>
                             <button
@@ -760,10 +761,10 @@ export default function StudioPage() {
             left: 'var(--sidebar-width)',
             right: 0,
             zIndex: 100,
-            background: 'linear-gradient(180deg, rgba(13,17,30,0.97) 0%, rgba(8,10,20,0.99) 100%)',
+            background: 'var(--bottom-dock-bg)',
             backdropFilter: 'blur(24px)',
-            borderTop: '1px solid rgba(124,58,237,0.2)',
-            boxShadow: '0 -8px 40px rgba(0,0,0,0.7)',
+            borderTop: '1px solid var(--glass-border)',
+            boxShadow: '0 -8px 40px rgba(0,0,0,0.15)',
             padding: '12px 24px 16px',
           }}>
             {/* Single row: label above + control below, all same height */}
@@ -771,10 +772,10 @@ export default function StudioPage() {
 
               {/* ── 1. Reference ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '148px' }}>
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Reference</span>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Reference</span>
                 <div
                   className={`drag-zone ${isDragging ? 'active' : ''}`}
-                  style={{ width: '148px', height: '110px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px', cursor: 'pointer', position: 'relative', overflow: 'hidden', border: '1px dashed rgba(124,58,237,0.4)', borderRadius: '12px', background: 'rgba(15,22,36,0.5)', flexShrink: 0, transition: 'all 0.2s' }}
+                  style={{ width: '148px', height: '110px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px', cursor: 'pointer', position: 'relative', overflow: 'hidden', border: '1px dashed var(--input-border)', borderRadius: '12px', background: 'var(--input-bg)', flexShrink: 0, transition: 'all 0.2s' }}
                   onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
@@ -791,29 +792,29 @@ export default function StudioPage() {
                   ) : (
                     <>
                       <Upload size={20} color="#7c3aed" />
-                      <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Upload Reference</span>
-                      <span style={{ fontSize: '10px', color: '#475569' }}>Drag & drop or click</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Upload Reference</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Drag & drop or click</span>
                     </>
                   )}
                 </div>
               </div>
 
               {/* ── Divider ── */}
-              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+              <div style={{ width: '1px', height: '110px', background: 'var(--glass-border)', flexShrink: 0, alignSelf: 'flex-end' }} />
 
               {/* ── 2. Prompt ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Prompt</span>
+                  <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Prompt</span>
                   {/* Style chips inline */}
                   <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
                     {STYLES.map(s => (
                       <button key={s.id} onClick={() => setSelectedStyle(s.id)} style={{
                         padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, cursor: 'pointer',
                         fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', flexShrink: 0,
-                        background: selectedStyle === s.id ? 'rgba(124,58,237,0.2)' : 'rgba(30,41,59,0.4)',
-                        border: selectedStyle === s.id ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(71,85,105,0.2)',
-                        color: selectedStyle === s.id ? '#a78bfa' : '#64748b', transition: 'all 0.2s',
+                        background: selectedStyle === s.id ? 'rgba(124,58,237,0.2)' : 'var(--bg-secondary)',
+                        border: selectedStyle === s.id ? '1px solid rgba(124,58,237,0.4)' : '1px solid var(--input-border)',
+                        color: selectedStyle === s.id ? '#a78bfa' : 'var(--text-secondary)', transition: 'all 0.2s',
                       }}>{s.name.split(' & ')[0].split(' / ')[0]}</button>
                     ))}
                   </div>
@@ -829,14 +830,14 @@ export default function StudioPage() {
               </div>
 
               {/* ── Divider ── */}
-              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+              <div style={{ width: '1px', height: '110px', background: 'var(--glass-border)', flexShrink: 0, alignSelf: 'flex-end' }} />
 
               {/* ── 3. Provider & Model ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '186px' }}>
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Provider & Model</span>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Provider & Model</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', height: '110px' }}>
                   {isLoadingKeys ? (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', background: 'rgba(15,22,36,0.4)', borderRadius: '9px', fontSize: '12px', color: '#64748b', border: '1px solid rgba(71,85,105,0.2)' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', background: 'var(--input-bg)', borderRadius: '9px', fontSize: '12px', color: 'var(--text-secondary)', border: '1px solid var(--input-border)' }}>
                       <Loader2 size={12} className="spin-slow" /> Loading...
                     </div>
                   ) : availableProviders.length === 0 ? (
@@ -846,50 +847,69 @@ export default function StudioPage() {
                   ) : (
                     <select className="input-field" value={selectedProvider} onChange={e => handleProviderChange(e.target.value)}
                       style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}>
-                      {availableProviders.map(p => <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>)}
+                      {availableProviders.map(p => <option key={p} value={p} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{p}</option>)}
                     </select>
                   )}
                   <select className="input-field" value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
                     style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}
                     disabled={filteredModels.length === 0}>
                     {filteredModels.length === 0
-                      ? <option style={{ background: '#0d1120' }}>No Model Available</option>
-                      : filteredModels.map(m => <option key={m.id} value={m.id} style={{ background: '#0d1120' }}>{m.label} ({m.badge})</option>)
+                      ? <option style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>No Model Available</option>
+                      : filteredModels.map(m => <option key={m.id} value={m.id} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{m.label} ({m.badge})</option>)
                     }
                   </select>
                 </div>
               </div>
 
               {/* ── Divider ── */}
-              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+              <div style={{ width: '1px', height: '110px', background: 'var(--glass-border)', flexShrink: 0, alignSelf: 'flex-end' }} />
 
               {/* ── 4. Settings ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '174px' }}>
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Settings</span>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Settings</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', height: '110px' }}>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 12px', background: 'rgba(15,22,36,0.4)', borderRadius: '9px', border: '1px solid rgba(71,85,105,0.15)' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 12px', background: 'var(--input-bg)', borderRadius: '9px', border: '1px solid var(--input-border)' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                       <span>Variations</span>
                       <span style={{ color: '#7c3aed', fontWeight: 800 }}>{numVariations}</span>
                     </label>
                     <input type="range" min={1} max={8} value={numVariations} onChange={e => setNumVariations(Number(e.target.value))}
                       style={{ width: '100%', height: '4px', accentColor: '#7c3aed', cursor: 'pointer' }} />
                   </div>
-                  <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="input-field"
-                    style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}>
-                    {[
-                      { val: '1:1',  label: '1:1 — Square' },
-                      { val: '9:16', label: '9:16 — Stories / Reels' },
-                      { val: '16:9', label: '16:9 — Landscape' },
-                      { val: '4:5',  label: '4:5 — IG Portrait' },
-                      { val: '3:4',  label: '3:4 — Portrait' },
-                    ].map(r => <option key={r.val} value={r.val} style={{ background: '#0d1120' }}>{r.label}</option>)}
-                  </select>
+                  {selectedProvider === 'OpenAI' ? (
+                    <div style={{ display: 'flex', gap: '6px', flex: 1, width: '100%' }}>
+                      <select value={openAiSize} onChange={e => setOpenAiSize(e.target.value)} className="input-field"
+                        style={{ flex: 1, padding: '0 8px', fontSize: '11px', borderRadius: '9px', minHeight: 0, cursor: 'pointer', minWidth: 0 }}>
+                        <option value="auto" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Size: Auto</option>
+                        <option value="1024x1024" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Square (1024×1024)</option>
+                        <option value="1024x1536" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Portrait (1024×1536)</option>
+                        <option value="1536x1024" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Landscape (1536×1024)</option>
+                      </select>
+                      <select value={openAiQuality} onChange={e => setOpenAiQuality(e.target.value)} className="input-field"
+                        style={{ flex: 1, padding: '0 8px', fontSize: '11px', borderRadius: '9px', minHeight: 0, cursor: 'pointer', minWidth: 0 }}>
+                        <option value="auto" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Quality: Auto</option>
+                        <option value="high" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>High</option>
+                        <option value="medium" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Medium</option>
+                        <option value="low" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Low</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="input-field"
+                      style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}>
+                      {[
+                        { val: '1:1',  label: '1:1 — Square' },
+                        { val: '9:16', label: '9:16 — Stories / Reels' },
+                        { val: '16:9', label: '16:9 — Landscape' },
+                        { val: '4:5',  label: '4:5 — IG Portrait' },
+                        { val: '3:4',  label: '3:4 — Portrait' },
+                      ].map(r => <option key={r.val} value={r.val} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{r.label}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
 
               {/* ── Divider ── */}
-              <div style={{ width: '1px', height: '110px', background: 'rgba(71,85,105,0.2)', flexShrink: 0, alignSelf: 'flex-end' }} />
+              <div style={{ width: '1px', height: '110px', background: 'var(--glass-border)', flexShrink: 0, alignSelf: 'flex-end' }} />
 
               {/* ── 5. Generate ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, width: '120px' }}>

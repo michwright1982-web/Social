@@ -306,7 +306,7 @@ function VaultContent() {
       case 'invalid':      return <span className="badge badge-red"><AlertCircle size={9} /> Incorrect Key</span>;
       case 'connected':    return <span className="badge badge-green"><CheckCircle2 size={9} /> Connected</span>;
       case 'expired':      return <span className="badge badge-amber"><AlertCircle size={9} /> Expired</span>;
-      case 'disconnected': return <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Disconnected</span>;
+      case 'disconnected': return <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--glass-border)' }}>Disconnected</span>;
       default:             return <span className="badge badge-violet">Untested</span>;
     }
   };
@@ -357,8 +357,8 @@ function VaultContent() {
               <Shield size={20} color="#7c3aed" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0' }}>AES-256 Encrypted Storage</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>AES-256 Encrypted Storage</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                 All API keys and OAuth tokens are encrypted before storage. Keys are only decrypted in-memory during active API requests. They are never exposed to the browser.
               </div>
             </div>
@@ -374,10 +374,10 @@ function VaultContent() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div>
-                  <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <KeyRound size={15} color="#7c3aed" /> AI Provider Keys
                   </h2>
-                  <p style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>For image generation and caption AI</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>For image generation and caption AI</p>
                 </div>
                 <button className="btn-primary" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={() => setShowAddKey(!showAddKey)} id="add-key-btn">
                   <Plus size={13} /> Add Key
@@ -394,14 +394,14 @@ function VaultContent() {
                     className="glass-card"
                     style={{ padding: '20px', marginBottom: '14px', overflow: 'hidden' }}
                   >
-                    <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Plus size={13} /> Add New API Key
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <select className="input-field" style={{ fontSize: '13px' }} value={newProvider} onChange={e => setNewProvider(e.target.value)} id="new-provider-select">
-                        <option value="" style={{ background: '#0d1120' }}>Select Provider</option>
+                        <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Select Provider</option>
                         {['Google AI Studio', 'OpenAI', 'Hugging Face', 'Stability AI', 'Midjourney'].map(p => (
-                          <option key={p} value={p} style={{ background: '#0d1120' }}>{p}</option>
+                          <option key={p} value={p} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{p}</option>
                         ))}
                       </select>
                       <input className="input-field" placeholder="Label (e.g. GPT-4o Production)" value={newLabel} onChange={e => setNewLabel(e.target.value)} style={{ fontSize: '13px' }} id="new-key-label" />
@@ -423,8 +423,8 @@ function VaultContent() {
                   <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <KeyRound size={20} color="#7c3aed" />
                   </div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8' }}>No API keys added</div>
-                  <div style={{ fontSize: '12px', color: '#475569', maxWidth: '220px', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>No API keys added</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '220px', lineHeight: 1.6 }}>
                     Add your Google AI Studio, OpenAI, or Stability AI key to enable dynamic image generation.
                   </div>
                   <button className="btn-primary" style={{ fontSize: '12px', padding: '9px 18px', marginTop: '4px' }} onClick={() => setShowAddKey(true)}>
@@ -450,27 +450,27 @@ function VaultContent() {
                             {config.icon}
                           </div>
                           <div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{key.provider}</div>
-                            <div style={{ fontSize: '11px', color: '#475569' }}>{key.label}</div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{key.provider}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{key.label}</div>
                           </div>
                         </div>
                         {statusBadge(key.status)}
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(15,22,36,0.8)', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', border: '1px solid rgba(124,58,237,0.1)' }}>
-                        <code style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', border: '1px solid var(--input-border)' }}>
+                        <code style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {showKeys[key.id] ? key.key : '••••••••••••••••••••••••••••••'}
                         </code>
-                        <button onClick={() => toggleVisibility(key.id)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '2px' }}>
+                        <button onClick={() => toggleVisibility(key.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}>
                           {showKeys[key.id] ? <EyeOff size={13} /> : <Eye size={13} />}
                         </button>
-                        <button onClick={() => handleCopy(key.id, key.key)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '2px' }}>
+                        <button onClick={() => handleCopy(key.id, key.key)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}>
                           {copiedId === key.id ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
                         </button>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Zap size={9} color="#7c3aed" /> Last used: {key.lastUsed || 'Never'}
                         </span>
                         <div style={{ display: 'flex', gap: '6px' }}>
@@ -491,10 +491,10 @@ function VaultContent() {
             {/* ── Social Accounts ─────────────────────────────────────────── */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <div style={{ marginBottom: '14px' }}>
-                <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ExternalLink size={15} color="#06b6d4" /> Social Accounts
                 </h2>
-                <p style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Connect your social profiles via OAuth 2.0</p>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Connect your social profiles via OAuth 2.0</p>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -520,20 +520,20 @@ function VaultContent() {
                             {platform.icon}
                           </div>
                           <div>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {platform.label}
                               {hasCreds && <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', color: '#34d399', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>App Configured</span>}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                               {isLoading ? (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <Loader2 size={10} className="spin-slow" /> Checking...
                                 </span>
                               ) : status.connected ? (
-                                <span style={{ color: '#64748b' }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>
                                   {status.handle}
                                   {status.connected_at && (
-                                    <span style={{ marginLeft: '6px', color: '#334155' }}>
+                                    <span style={{ marginLeft: '6px', color: 'var(--text-muted)' }}>
                                       · Connected {new Date(status.connected_at).toLocaleDateString()}
                                     </span>
                                   )}
@@ -585,7 +585,7 @@ function VaultContent() {
                             style={{ overflow: 'hidden' }}
                           >
                             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(124,58,237,0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between' }}>
                                 Configure {platform.label} Integration
                                 <Link href={`/setup-guide?platform=${platform.id}`} style={{ color: '#06b6d4', textDecoration: 'none', fontWeight: 500 }}>Setup Guide ↗</Link>
                               </div>
@@ -681,7 +681,7 @@ function VaultContent() {
                   <Shield size={14} color="#06b6d4" style={{ marginTop: '1px', flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#22d3ee', marginBottom: '4px' }}>OAuth 2.0 Security</div>
-                    <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.6 }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                       Connecting your accounts uses the official OAuth 2.0 flow. We only request the minimum required permissions (publish posts). Your password is never shared with us.
                     </div>
                   </div>

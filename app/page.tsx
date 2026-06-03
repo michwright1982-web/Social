@@ -53,10 +53,10 @@ export default function Dashboard() {
                         <Icon size={18} color={stat.color} />
                       </div>
                     </div>
-                    <div style={{ fontSize: '28px', fontWeight: 800, color: '#475569', fontFamily: "'Outfit', sans-serif", letterSpacing: '-1px' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif", letterSpacing: '-1px' }}>
                       —
                     </div>
-                    <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>{stat.label}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 500 }}>{stat.label}</div>
                   </div>
                 );
               })}
@@ -66,10 +66,10 @@ export default function Dashboard() {
 
               {/* Campaigns Empty State */}
               <motion.div variants={item} className="glass-card" style={{ overflow: 'hidden' }}>
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(124,58,237,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>Recent Campaigns</h2>
-                    <p style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>Your latest marketing efforts</p>
+                    <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Recent Campaigns</h2>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Your latest marketing efforts</p>
                   </div>
                   <Link href="/studio" style={{ textDecoration: 'none' }}>
                     <button className="btn-secondary" style={{ padding: '8px 14px', fontSize: '12px' }}>
@@ -79,11 +79,11 @@ export default function Dashboard() {
                 </div>
 
                 <div style={{ padding: '60px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                    <Inbox size={22} color="#7c3aed" />
+                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                    <Inbox size={22} color="var(--accent-violet)" />
                   </div>
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>No campaigns yet</div>
-                  <div style={{ fontSize: '13px', color: '#475569', marginBottom: '20px', maxWidth: '280px', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>No campaigns yet</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', maxWidth: '280px', lineHeight: 1.6 }}>
                     Create your first campaign in the Creative Studio to see it appear here.
                   </div>
                   <Link href="/studio" style={{ textDecoration: 'none' }}>
@@ -99,7 +99,7 @@ export default function Dashboard() {
 
                 {/* Quick Actions */}
                 <motion.div variants={item} className="glass-card" style={{ padding: '20px' }}>
-                  <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', marginBottom: '14px' }}>Quick Actions</h2>
+                  <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px' }}>Quick Actions</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <Link href="/studio" style={{ textDecoration: 'none' }}>
                       <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
@@ -121,14 +121,14 @@ export default function Dashboard() {
 
                 {/* Platform Health */}
                 <motion.div variants={item} className="glass-card" style={{ padding: '20px' }}>
-                  <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', marginBottom: '14px' }}>Platform Health</h2>
+                  <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px' }}>Platform Health</h2>
                   {platformHealth.map(p => (
                     <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {p.icon}
-                        <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>{p.name}</span>
+                        <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{p.name}</span>
                       </div>
-                      <span style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>Not connected</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Not connected</span>
                     </div>
                   ))}
                   <Link href="/vault" style={{ textDecoration: 'none' }}>

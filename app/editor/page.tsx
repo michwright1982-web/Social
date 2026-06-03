@@ -7,7 +7,7 @@ import Topbar from '@/components/Topbar';
 import {
   Send, Check, Copy, RefreshCw, Sparkles, AlertCircle, CheckCircle2,
   Loader2, Hash, AtSign, Clock, Zap, Globe, ImageIcon, Upload, X,
-  Crop, Move, Minus, Plus, Eye, EyeOff, Layers, ToggleLeft, ToggleRight,
+  Crop, Eye, EyeOff,
 } from 'lucide-react';
 import { loadFromImageDB } from '@/lib/image-db';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
@@ -101,8 +101,8 @@ export default function EditorPage() {
       const activeId = localStorage.getItem('ai_marketing_active_company_id');
       const companiesStr = localStorage.getItem('ai_marketing_companies');
       if (activeId && companiesStr) {
-        const companies = JSON.parse(companiesStr);
-        const active = companies.find((c: any) => c.id === activeId);
+        const companies = JSON.parse(companiesStr) as { id: string; logo?: string | null }[];
+        const active = companies.find((c) => c.id === activeId);
         if (active && active.logo) {
           setCompanyLogo(active.logo);
           setShowLogo(true);
@@ -150,6 +150,7 @@ export default function EditorPage() {
   // ── Crop tool ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (activeCropRatio && isCropping) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCropRect(prev => {
         const expectedH = prev.w / activeCropRatio;
         if (prev.y + expectedH <= 100) return { ...prev, h: expectedH };
@@ -168,7 +169,7 @@ export default function EditorPage() {
       const rect = imageContainerRef.current.getBoundingClientRect();
       const dx = ((ev.clientX - startX) / rect.width) * 100;
       const dy = ((ev.clientY - startY) / rect.height) * 100;
-      setCropRect(prev => {
+      setCropRect(() => {
         let { x, y, w, h } = startRect;
         if (handle === 'move') {
           x = Math.max(0, Math.min(100 - w, x + dx)); 
@@ -349,9 +350,10 @@ export default function EditorPage() {
         } else {
           setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: data.error || 'Failed to publish' } }));
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Network Error:", err);
-        setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: err.message || 'Network error occurred' } }));
+        const msg = err instanceof Error ? err.message : 'Network error occurred';
+        setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: msg } }));
       }
     }
     
@@ -408,7 +410,7 @@ export default function EditorPage() {
                     position: 'relative',
                     width: '100%',
                     aspectRatio: '1/1',
-                    background: activeImage ? '#090d16' : 'rgba(124,58,237,0.04)',
+                    background: activeImage ? 'var(--bg-primary)' : 'var(--gradient-card)',
                     overflow: 'hidden',
                     cursor: isCropping ? 'crosshair' : 'default',
                   }}
@@ -545,8 +547,8 @@ export default function EditorPage() {
                         <ImageIcon size={28} color="#7c3aed" />
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>No image selected</div>
-                        <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>Upload an image or generate one in the AI Studio.</div>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>No image selected</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>Upload an image or generate one in the AI Studio.</div>
                       </div>
                       <div style={{ display: 'flex', gap: '10px' }}>
                         <label className="btn-secondary" style={{ padding: '10px 16px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -565,7 +567,7 @@ export default function EditorPage() {
 
                 {/* Toolbar */}
                 {activeImage && (
-                  <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(8,10,20,0.6)', overflowX: 'auto' }}>
+                  <div style={{ padding: '12px 16px', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--topbar-bg)', overflowX: 'auto' }}>
                     {/* Upload more */}
                     <label title="Upload image" className="btn-ghost" style={{ padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <Upload size={12} /> Add Image
@@ -598,7 +600,7 @@ export default function EditorPage() {
                         title={showLogo ? 'Hide logo' : 'Show logo'}
                         onClick={() => setShowLogo(v => !v)}
                         className="btn-ghost"
-                        style={{ padding: '6px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px', color: showLogo ? '#a78bfa' : '#475569' }}
+                        style={{ padding: '6px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px', color: showLogo ? '#a78bfa' : 'var(--text-muted)' }}
                       >
                         {showLogo ? <Eye size={12} /> : <EyeOff size={12} />} Logo
                       </button>
@@ -620,7 +622,7 @@ export default function EditorPage() {
               {/* Image strip — multi image thumbnails */}
               {images.length > 1 && (
                 <div className="glass-card" style={{ padding: '12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>
                     Images ({images.length})
                   </div>
                   <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
@@ -647,14 +649,14 @@ export default function EditorPage() {
               {/* Aspect ratio pills */}
               {activeImage && (
                 <div className="glass-card" style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Platform Fit</div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Platform Fit</div>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {platforms.map(p => {
                       const Icon = p.icon;
                       return (
-                        <div key={p.id} style={{ flex: 1, textAlign: 'center', padding: '8px 4px', borderRadius: '10px', background: 'rgba(15,22,36,0.6)', border: '1px solid rgba(124,58,237,0.1)' }}>
+                        <div key={p.id} style={{ flex: 1, textAlign: 'center', padding: '8px 4px', borderRadius: '10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)' }}>
                           <Icon size={13} color={p.color} style={{ marginBottom: '3px' }} />
-                          <div style={{ fontSize: '9px', color: '#475569', fontWeight: 600 }}>{p.aspectRatio}</div>
+                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600 }}>{p.aspectRatio}</div>
                         </div>
                       );
                     })}
@@ -686,12 +688,12 @@ export default function EditorPage() {
                         fontFamily: "'Inter', sans-serif",
                       }}
                     >
-                      <Icon size={16} color={isActive ? p.color : '#64748b'} style={{ opacity: enabledPlatforms[p.id] ? 1 : 0.35 }} />
-                      <span style={{ fontSize: '10px', fontWeight: 600, color: isActive ? '#e2e8f0' : '#64748b', opacity: enabledPlatforms[p.id] ? 1 : 0.35 }}>
+                      <Icon size={16} color={isActive ? p.color : 'var(--text-secondary)'} style={{ opacity: enabledPlatforms[p.id] ? 1 : 0.35 }} />
+                      <span style={{ fontSize: '10px', fontWeight: 600, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: enabledPlatforms[p.id] ? 1 : 0.35 }}>
                         {p.label.split(' ')[0]}
                       </span>
                       {!enabledPlatforms[p.id] && (
-                        <span style={{ position: 'absolute', top: 5, right: 5, fontSize: '8px', color: '#475569', fontWeight: 700, background: 'rgba(71,85,105,0.2)', padding: '1px 4px', borderRadius: '4px' }}>SKIP</span>
+                        <span style={{ position: 'absolute', top: 5, right: 5, fontSize: '8px', color: 'var(--text-muted)', fontWeight: 700, background: 'var(--bg-secondary)', padding: '1px 4px', borderRadius: '4px' }}>SKIP</span>
                       )}
                       {s.status !== 'idle' && (
                         <span style={{ position: 'absolute', top: 5, left: 5 }}>{statusIcon(s.status)}</span>
@@ -717,20 +719,20 @@ export default function EditorPage() {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         {(() => { const Icon = platform.icon; return <Icon size={16} color={platform.color} />; })()}
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>{platform.label}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{platform.label}</span>
                         {platformStatuses[activePlatform].status !== 'idle' && statusIcon(platformStatuses[activePlatform].status)}
                       </div>
-                      <p style={{ fontSize: '11px', color: '#475569', maxWidth: '320px', lineHeight: 1.5 }}>{platform.tip}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '320px', lineHeight: 1.5 }}>{platform.tip}</p>
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                       {/* Skip toggle */}
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', background: 'rgba(15,22,36,0.5)', padding: '6px 12px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: enabledPlatforms[activePlatform] ? '#a78bfa' : '#64748b' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', background: 'var(--input-bg)', padding: '6px 12px', borderRadius: '9px', border: '1px solid var(--input-border)' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: enabledPlatforms[activePlatform] ? '#a78bfa' : 'var(--text-secondary)' }}>
                           {enabledPlatforms[activePlatform] ? 'Post' : 'Skip'}
                         </span>
                         <div
-                          style={{ width: '34px', height: '18px', background: enabledPlatforms[activePlatform] ? '#7c3aed' : 'rgba(255,255,255,0.08)', borderRadius: '9px', position: 'relative', transition: '0.25s', cursor: 'pointer', flexShrink: 0 }}
+                          style={{ width: '34px', height: '18px', background: enabledPlatforms[activePlatform] ? '#7c3aed' : 'var(--bg-secondary)', borderRadius: '9px', position: 'relative', transition: '0.25s', cursor: 'pointer', flexShrink: 0 }}
                           onClick={e => { e.preventDefault(); setEnabledPlatforms(prev => ({ ...prev, [activePlatform]: !prev[activePlatform] })); }}
                         >
                           <div style={{ width: '14px', height: '14px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: enabledPlatforms[activePlatform] ? '18px' : '2px', transition: '0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }} />
@@ -759,10 +761,10 @@ export default function EditorPage() {
                   {/* Footer stats */}
                   <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', gap: '14px' }}>
-                      <span style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Hash size={10} /> {(caption.match(/#\w+/g) || []).length} / {platform.maxHashtags} hashtags
                       </span>
-                      <span style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <AtSign size={10} /> {(caption.match(/@\w+/g) || []).length} mentions
                       </span>
                     </div>
@@ -770,7 +772,7 @@ export default function EditorPage() {
                       <div style={{ width: '90px', height: '4px', background: 'rgba(124,58,237,0.12)', borderRadius: '2px' }}>
                         <div style={{ width: `${charPct}%`, height: '100%', background: charPct > 90 ? '#ef4444' : 'linear-gradient(to right,#7c3aed,#06b6d4)', borderRadius: '2px', transition: 'width 0.3s' }} />
                       </div>
-                      <span style={{ fontSize: '11px', color: charPct > 90 ? '#f87171' : '#475569', fontWeight: 600 }}>
+                      <span style={{ fontSize: '11px', color: charPct > 90 ? '#f87171' : 'var(--text-muted)', fontWeight: 600 }}>
                         {charCount.toLocaleString()} / {platform.charLimit.toLocaleString()}
                       </span>
                     </div>
@@ -786,8 +788,8 @@ export default function EditorPage() {
                       <Clock size={16} color="#7c3aed" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>Schedule for Later</div>
-                      <div style={{ fontSize: '11px', color: '#475569', marginTop: '1px' }}>Best times: 9 AM, 12 PM, 6 PM IST</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>Schedule for Later</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>Best times: 9 AM, 12 PM, 6 PM IST</div>
                     </div>
                   </div>
                   <input type="datetime-local" className="input-field" style={{ width: '200px', fontSize: '12px', padding: '8px 12px' }} />
@@ -828,7 +830,7 @@ export default function EditorPage() {
                     className="glass-card"
                     style={{ overflow: 'hidden', padding: '16px 20px' }}
                   >
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Globe size={12} color="#7c3aed" /> Publish Summary
                     </div>
                     {platforms.map(p => {
@@ -836,10 +838,10 @@ export default function EditorPage() {
                       const Icon = p.icon;
                       const s = platformStatuses[p.id];
                       return (
-                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Icon size={14} color={p.color} />
-                            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{p.label}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>{p.label}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             {statusIcon(s.status)}

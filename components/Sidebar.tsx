@@ -79,6 +79,7 @@ export default function Sidebar() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCompanies();
     window.addEventListener('brand-updated', loadCompanies);
     return () => window.removeEventListener('brand-updated', loadCompanies);
@@ -112,7 +113,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       {/* Workspace Switcher */}
-      <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(124,58,237,0.12)', position: 'relative' }}>
+      <div style={{ padding: '24px 20px', borderBottom: '1px solid var(--glass-border)', position: 'relative' }}>
         <motion.div
           onClick={() => setShowDropdown(v => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}
@@ -131,14 +132,14 @@ export default function Sidebar() {
             )}
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '15px', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
               {displayName ? displayName : 'AI Marketing'}
             </div>
-            <div style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--accent-violet)', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
               {displayName ? 'Marketing Hub' : 'Hub'}
             </div>
           </div>
-          <ChevronDown size={16} color="#64748b" style={{ transform: showDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+          <ChevronDown size={16} color="var(--text-secondary)" style={{ transform: showDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
         </motion.div>
 
         {/* Dropdown Menu */}
@@ -148,34 +149,34 @@ export default function Sidebar() {
             animate={{ opacity: 1, y: 0 }}
             style={{
               position: 'absolute', top: '75px', left: '16px', right: '16px', zIndex: 100,
-              background: '#0f1624', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '12px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)', overflow: 'hidden', padding: '8px'
+              background: 'var(--bg-card)', border: '1px solid var(--glass-border)',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.15)', overflow: 'hidden', padding: '8px'
             }}
           >
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', padding: '8px 12px 4px' }}>Workspaces</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', padding: '8px 12px 4px' }}>Workspaces</div>
             {companies.map(c => (
               <div
                 key={c.id}
                 onClick={() => handleSwitchCompany(c.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px',
-                  background: activeCompanyId === c.id ? 'rgba(124,58,237,0.15)' : 'transparent',
-                  color: activeCompanyId === c.id ? '#a78bfa' : '#cbd5e1',
+                  background: activeCompanyId === c.id ? 'rgba(124,58,237,0.12)' : 'transparent',
+                  color: activeCompanyId === c.id ? 'var(--accent-violet)' : 'var(--text-secondary)',
                   cursor: 'pointer', fontSize: '13px', fontWeight: activeCompanyId === c.id ? 600 : 500,
                 }}
-                onMouseEnter={e => { if (activeCompanyId !== c.id) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                onMouseEnter={e => { if (activeCompanyId !== c.id) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
                 onMouseLeave={e => { if (activeCompanyId !== c.id) e.currentTarget.style.background = 'transparent'; }}
               >
                 {c.logo ? (
                   <img src={c.logo} alt={c.name} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                 ) : (
-                  <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Target size={12} /></div>
+                  <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Target size={12} /></div>
                 )}
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name || 'Unnamed Company'}</span>
               </div>
             ))}
             
-            <div style={{ margin: '8px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }} />
+            <div style={{ margin: '8px 0', borderTop: '1px solid var(--glass-border)' }} />
             
             <Link href="/brand" style={{ textDecoration: 'none' }} onClick={() => {
               setShowDropdown(false);
@@ -206,9 +207,9 @@ export default function Sidebar() {
             }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px',
-                color: '#06b6d4', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+                color: 'var(--accent-cyan)', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.1)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(6,182,212,0.15)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <Plus size={14} /> Add New Company
@@ -220,7 +221,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
-        <div style={{ fontSize: '10px', fontWeight: 600, color: '#475569', letterSpacing: '1px', textTransform: 'uppercase', padding: '4px 8px 12px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase', padding: '4px 8px 12px' }}>
           Main
         </div>
         {navItems.map((item, i) => {
@@ -241,21 +242,21 @@ export default function Sidebar() {
                     ? 'linear-gradient(135deg, rgba(124,58,237,0.2) 0%, rgba(79,70,229,0.15) 100%)'
                     : 'transparent',
                   border: isActive ? '1px solid rgba(124,58,237,0.3)' : '1px solid transparent',
-                  color: isActive ? '#a78bfa' : '#64748b',
+                  color: isActive ? 'var(--accent-violet)' : 'var(--text-secondary)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   fontSize: '14px', fontWeight: isActive ? 600 : 500,
                 }}
                   onMouseEnter={e => {
                     if (!isActive) {
-                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(124,58,237,0.08)';
-                      (e.currentTarget as HTMLDivElement).style.color = '#94a3b8';
+                      (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-secondary)';
+                      (e.currentTarget as HTMLDivElement).style.color = 'var(--text-primary)';
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive) {
                       (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-                      (e.currentTarget as HTMLDivElement).style.color = '#64748b';
+                      (e.currentTarget as HTMLDivElement).style.color = 'var(--text-secondary)';
                     }
                   }}
                 >
@@ -290,11 +291,11 @@ export default function Sidebar() {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '10px 12px', borderRadius: '12px',
-                color: '#64748b', cursor: 'pointer', fontSize: '14px', fontWeight: 500,
+                color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px', fontWeight: 500,
                 transition: 'all 0.2s ease',
               }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(124,58,237,0.08)'; (e.currentTarget as HTMLDivElement).style.color = '#94a3b8'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; (e.currentTarget as HTMLDivElement).style.color = '#64748b'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-secondary)'; (e.currentTarget as HTMLDivElement).style.color = 'var(--text-primary)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; (e.currentTarget as HTMLDivElement).style.color = 'var(--text-secondary)'; }}
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
@@ -307,7 +308,7 @@ export default function Sidebar() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px',
           padding: '10px 12px', borderRadius: '12px', marginTop: '8px',
-          background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.12)',
+          background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)',
         }}>
           <div style={{
             width: '32px', height: '32px', borderRadius: '50%',
@@ -316,8 +317,8 @@ export default function Sidebar() {
             fontSize: '13px', fontWeight: 700, color: 'white', flexShrink: 0,
           }}>V</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Vinith</div>
-            <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Vinith</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Zap size={9} color="#7c3aed" />
               Pro Plan
             </div>

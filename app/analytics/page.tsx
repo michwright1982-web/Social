@@ -44,9 +44,9 @@ export default function AnalyticsPage() {
                   style={{
                     padding: '7px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 600,
                     cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                    background: i === 1 ? 'rgba(124,58,237,0.2)' : 'rgba(15,22,36,0.6)',
-                    border: i === 1 ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(71,85,105,0.2)',
-                    color: i === 1 ? '#a78bfa' : '#64748b',
+                    background: i === 1 ? 'rgba(124,58,237,0.2)' : 'var(--input-bg)',
+                    border: i === 1 ? '1px solid rgba(124,58,237,0.4)' : '1px solid var(--input-border)',
+                    color: i === 1 ? '#a78bfa' : 'var(--text-secondary)',
                     transition: 'all 0.2s',
                   }}
                   id={`range-${range.replace(' ', '-')}`}
@@ -77,8 +77,8 @@ export default function AnalyticsPage() {
                         <Icon size={16} color={stat.color} />
                       </div>
                     </div>
-                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#475569', fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.5px' }}>—</div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px', fontWeight: 500 }}>{stat.label}</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.5px' }}>—</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px', fontWeight: 500 }}>{stat.label}</div>
                   </motion.div>
                 );
               })}
@@ -97,13 +97,13 @@ export default function AnalyticsPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <div>
-                    <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>Weekly Performance</h2>
-                    <p style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Impressions vs. Reach over time</p>
+                    <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Weekly Performance</h2>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Impressions vs. Reach over time</p>
                   </div>
                 </div>
-                <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', borderRadius: '12px', border: '1px dashed rgba(124,58,237,0.15)', background: 'rgba(124,58,237,0.03)' }}>
+                <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', borderRadius: '12px', border: '1px dashed var(--input-border)', background: 'rgba(124,58,237,0.03)' }}>
                   <LineChart size={28} color="rgba(124,58,237,0.3)" />
-                  <p style={{ fontSize: '13px', color: '#475569', textAlign: 'center', maxWidth: '220px', lineHeight: 1.6 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '220px', lineHeight: 1.6 }}>
                     Chart will appear once you publish campaigns and connect your social accounts.
                   </p>
                 </div>
@@ -117,12 +117,12 @@ export default function AnalyticsPage() {
                 className="glass-card"
                 style={{ padding: '20px' }}
               >
-                <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <BarChart2 size={14} color="#7c3aed" /> Top Campaigns
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', gap: '10px' }}>
                   <BarChart2 size={24} color="rgba(124,58,237,0.25)" />
-                  <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', lineHeight: 1.6 }}>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
                     Top performing campaigns will appear here after publishing.
                   </p>
                 </div>
@@ -137,16 +137,16 @@ export default function AnalyticsPage() {
               className="glass-card"
               style={{ overflow: 'hidden' }}
             >
-              <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(124,58,237,0.1)' }}>
-                <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>Platform Breakdown</h2>
-                <p style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Performance by social network</p>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--glass-border)' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Platform Breakdown</h2>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Performance by social network</p>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(124,58,237,0.08)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
                       {['Platform', 'Posts', 'Impressions', 'Reach', 'Engagement', 'Growth'].map(h => (
-                        <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: '10px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                        <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -159,18 +159,18 @@ export default function AnalyticsPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: i * 0.1 + 0.5 }}
-                          style={{ borderBottom: i < platforms.length - 1 ? '1px solid rgba(124,58,237,0.06)' : 'none' }}
+                          style={{ borderBottom: i < platforms.length - 1 ? '1px solid var(--glass-border)' : 'none' }}
                         >
                           <td style={{ padding: '14px 20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${p.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Icon size={15} color={p.color} />
                               </div>
-                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>{p.platform}</span>
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{p.platform}</span>
                             </div>
                           </td>
                           {['—', '—', '—', '—', '—'].map((val, vi) => (
-                            <td key={vi} style={{ padding: '14px 20px', fontSize: '13px', color: '#475569', fontWeight: 500 }}>{val}</td>
+                            <td key={vi} style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{val}</td>
                           ))}
                         </motion.tr>
                       );

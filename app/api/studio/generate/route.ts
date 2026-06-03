@@ -10,7 +10,17 @@ interface ApiKey {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { prompt: string; provider: string; model?: string; style?: string; styleRules?: string; ratio?: string; variations?: number };
+  let body: { 
+    prompt: string; 
+    provider: string; 
+    model?: string; 
+    style?: string; 
+    styleRules?: string; 
+    ratio?: string; 
+    variations?: number;
+    openAiSize?: string;
+    openAiQuality?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -123,14 +133,18 @@ export async function POST(req: NextRequest) {
       const cleanModelId = model || 'gpt-image-2';
       const variations = body.variations || 1;
       
-      let openAiSize = '1024x1024';
-      if (ratio === '9:16' || ratio === '4:5' || ratio === '3:4') {
-        openAiSize = '1024x1536';
-      } else if (ratio === '16:9') {
-        openAiSize = '1536x1024';
+      let openAiSize = body.openAiSize || 'auto';
+      if (openAiSize === 'auto') {
+        if (ratio === '9:16' || ratio === '4:5' || ratio === '3:4') {
+          openAiSize = '1024x1536';
+        } else if (ratio === '16:9') {
+          openAiSize = '1536x1024';
+        } else {
+          openAiSize = '1024x1024';
+        }
       }
 
-      const reqBody: any = {
+      const reqBody: Record<string, string | number> = {
         model: cleanModelId,
         prompt: enhancedPrompt,
         n: 1, // Models force n=1 per request, so we loop below
@@ -138,7 +152,7 @@ export async function POST(req: NextRequest) {
       };
 
       if (cleanModelId !== 'gpt-image-1') {
-        reqBody.quality = 'standard';
+        reqBody.quality = body.openAiQuality || 'auto';
       }
 
       const fetchPromises = Array.from({ length: variations }).map(() => 
@@ -259,8 +273,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Image generation for ${provider} is not implemented yet.` }, { status: 400 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[studio/generate] Error:', error);
-    return NextResponse.json({ error: `Failed to generate image due to an internal server error: ${error?.message || String(error)}` }, { status: 500 });
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Failed to generate image due to an internal server error: ${errorMsg}` }, { status: 500 });
   }
 }

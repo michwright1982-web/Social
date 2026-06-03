@@ -191,10 +191,10 @@ export default function BrandIdentityPage() {
           <div style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* ── Page Header & Save Action ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: '12px', borderBottom: '1px solid rgba(124,58,237,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: '12px', borderBottom: '1px solid var(--glass-border)' }}>
               <div>
-                <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#e2e8f0', fontFamily: "'Outfit', sans-serif" }}>Brand Profile</h1>
-                <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>These settings instruct the AI on how to render your visual identity.</p>
+                <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Brand Profile</h1>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>These settings instruct the AI on how to render your visual identity.</p>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 {companies.length > 1 && (
@@ -228,10 +228,10 @@ export default function BrandIdentityPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <div>
-                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <ImageIcon size={16} color="#a78bfa" /> Company Brand Asset
                     </h2>
-                    <p style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>Name and transparent PNG for watermarking.</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Name and transparent PNG for watermarking.</p>
                   </div>
                   {companyLogo && (
                     <button
@@ -276,7 +276,7 @@ export default function BrandIdentityPage() {
                       width: '180px', height: '180px', flexShrink: 0,
                       border: `2px dashed ${logoDragging ? 'rgba(124,58,237,0.7)' : 'rgba(124,58,237,0.3)'}`,
                       borderRadius: '16px',
-                      background: companyLogo ? 'rgba(15,22,36,0.8)' : logoDragging ? 'rgba(124,58,237,0.08)' : 'rgba(15,22,36,0.5)',
+                      background: companyLogo ? 'var(--input-bg)' : logoDragging ? 'rgba(124,58,237,0.08)' : 'var(--bg-secondary)',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                       gap: '8px', cursor: 'pointer', transition: 'all 0.2s', padding: companyLogo ? '16px' : '0', overflow: 'hidden'
                     }}
@@ -287,8 +287,8 @@ export default function BrandIdentityPage() {
                     ) : (
                       <>
                         <Upload size={24} color="#7c3aed" />
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8', textAlign: 'center' }}>Upload Logo</span>
-                        <span style={{ fontSize: '11px', color: '#475569' }}>PNG format only</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>Upload Logo</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>PNG format only</span>
                       </>
                     )}
                   </label>
@@ -304,10 +304,10 @@ export default function BrandIdentityPage() {
                 style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}
               >
                 <div>
-                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                     <Type size={16} color="#06b6d4" /> Brand Typography
                   </h2>
-                  <p style={{ fontSize: '12px', color: '#475569', marginBottom: '12px' }}>Select the primary font family for AI generations.</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>Select the primary font family for AI generations.</p>
                   <select 
                     className="input-field" 
                     value={brandFont} 
@@ -315,16 +315,16 @@ export default function BrandIdentityPage() {
                     style={{ width: '100%', fontSize: '14px', padding: '12px' }}
                   >
                     {FONTS.map(font => (
-                      <option key={font.id} value={font.id} style={{ background: '#0d1120', fontFamily: font.type }}>{font.label}</option>
+                      <option key={font.id} value={font.id} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', fontFamily: font.type }}>{font.label}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                     <Palette size={16} color="#f59e0b" /> Brand Colors
                   </h2>
-                  <p style={{ fontSize: '12px', color: '#475569', marginBottom: '12px' }}>Choose your brand's core accent colors.</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>Choose your brand's core accent colors.</p>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {brandColors.map((color, idx) => (
@@ -391,10 +391,10 @@ export default function BrandIdentityPage() {
                 style={{ padding: '24px', gridColumn: '1 / -1' }}
               >
                 <div style={{ marginBottom: '16px' }}>
-                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sparkles size={16} color="#ec4899" /> Brand & Product Context
                   </h2>
-                  <p style={{ fontSize: '12px', color: '#475569', marginTop: '4px', maxWidth: '800px', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '800px', lineHeight: 1.5 }}>
                     Describe your brand voice, product details, target audience, or campaign goals. AI will use this exactly to generate highly tailored visual concepts and captions.
                   </p>
                 </div>
@@ -419,15 +419,15 @@ export default function BrandIdentityPage() {
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
                 <AlertCircle size={20} />
               </div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#f8fafc' }}>Delete Workspace?</h2>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>Delete Workspace?</h2>
             </div>
             
-            <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '24px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.5 }}>
               This action cannot be undone. This will permanently delete the <strong>{companyName || 'Unnamed Company'}</strong> brand profile.
             </p>
             
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 500 }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
                 Please type <strong>{companyName || 'Unnamed Company'}</strong> to confirm.
               </label>
               <input 
@@ -471,7 +471,7 @@ export default function BrandIdentityPage() {
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000 }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px', background: toast.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${toast.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}` }}>
             {toast.type === 'success' ? <CheckCircle2 size={18} color="#10b981" /> : <AlertCircle size={18} color="#ef4444" />}
-            <span style={{ fontSize: '14px', fontWeight: 500, color: '#f8fafc' }}>{toast.message}</span>
+            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{toast.message}</span>
           </motion.div>
         </div>
       )}
