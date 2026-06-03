@@ -586,12 +586,12 @@ function VaultContent() {
                           >
                             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(124,58,237,0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
-                                Configure {platform.label} App
+                                Configure {platform.label} Integration
                                 <Link href={`/setup-guide?platform=${platform.id}`} style={{ color: '#06b6d4', textDecoration: 'none', fontWeight: 500 }}>Setup Guide ↗</Link>
                               </div>
                               <input 
                                 className="input-field" 
-                                placeholder="Client ID (App ID)" 
+                                placeholder={platform.id === 'facebook' ? 'Facebook Page ID' : 'Client ID (App ID)'} 
                                 value={credsForm.clientId}
                                 onChange={e => setCredsForm(prev => ({ ...prev, clientId: e.target.value }))}
                                 style={{ fontSize: '13px', fontFamily: 'monospace' }} 
@@ -599,7 +599,7 @@ function VaultContent() {
                               <input 
                                 className="input-field" 
                                 type="password" 
-                                placeholder={creds?.isSecretSet ? "Client Secret (•••••••• saved)" : "Client Secret"} 
+                                placeholder={creds?.isSecretSet ? (platform.id === 'facebook' ? "Page Access Token (•••••••• saved)" : "Client Secret (•••••••• saved)") : (platform.id === 'facebook' ? "Graph API Page Access Token" : "Client Secret")} 
                                 value={credsForm.clientSecret}
                                 onChange={e => setCredsForm(prev => ({ ...prev, clientSecret: e.target.value }))}
                                 style={{ fontSize: '13px', fontFamily: 'monospace' }} 
@@ -634,8 +634,12 @@ function VaultContent() {
                               }
                             }}
                           >
-                            <Settings size={11} /> Configure App
+                            <Settings size={11} /> {platform.id === 'facebook' ? 'Configure Integration' : 'Configure App'}
                           </button>
+                        ) : platform.id === 'facebook' ? (
+                          <div style={{ width: '100%', padding: '8px', fontSize: '12px', textAlign: 'center', color: '#10b981', background: 'rgba(16,185,129,0.1)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <Check size={14} /> Ready to Publish
+                          </div>
                         ) : status.connected ? (
                           <button
                             onClick={() => handleDisconnect(platform.id)}
