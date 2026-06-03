@@ -84,26 +84,33 @@ export default function EditorPage() {
   useEffect(() => {
     const loadSelectedImages = async () => {
       const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-      let dbImages = await loadFromImageDB(`creative_studio_selected_images_${activeId}`);
-      
+      const key = `creative_studio_selected_images_${activeId}`;
+      let dbImages = await loadFromImageDB(key);
+
       if (!dbImages || dbImages.length === 0) {
-        let raw = localStorage.getItem(`creative_studio_selected_images_${activeId}`);
-        if (!raw) raw = sessionStorage.getItem(`creative_studio_selected_images_${activeId}`);
+        let raw = localStorage.getItem(key);
+        if (!raw) raw = sessionStorage.getItem(key);
         if (raw) {
-          try {
-            dbImages = JSON.parse(raw);
-          } catch { dbImages = [raw]; }
+          try { dbImages = JSON.parse(raw); } catch { dbImages = [raw]; }
         }
       }
-      
+
       if (Array.isArray(dbImages)) setImages(dbImages);
       else setImages([]);
+
+      // Clear the stored selection so the editor starts empty on next refresh.
+      // The Studio's persistedSelectedUrls will also be gone, matching the clean state.
+      try {
+        const { saveToImageDB } = await import('@/lib/image-db');
+        await saveToImageDB(key, []);
+      } catch { /* ignore */ }
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
     };
 
     loadSelectedImages();
-    window.addEventListener('brand-updated', loadSelectedImages);
-    return () => window.removeEventListener('brand-updated', loadSelectedImages);
   }, []);
+
 
   useEffect(() => {
     const loadActiveCompanyLogo = () => {
