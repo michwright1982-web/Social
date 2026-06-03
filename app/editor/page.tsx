@@ -305,7 +305,7 @@ export default function EditorPage() {
     const composedImage = images.length > 0 ? await composeImage(images[activeImageIdx] || images[0]) : null;
     
     if (!composedImage) {
-      showToast('No image available to publish', 'error');
+      alert('No image available to publish');
       setIsPublishingAll(false);
       return;
     }
