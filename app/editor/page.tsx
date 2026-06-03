@@ -206,7 +206,7 @@ export default function EditorPage() {
       canvas.width = cw; canvas.height = ch;
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
-      const cropped = canvas.toDataURL('image/png');
+      const cropped = canvas.toDataURL('image/jpeg', 0.9);
       setImages(prev => prev.map((im, i) => i === activeImageIdx ? cropped : im));
       setIsCropping(false);
       setCropRect({ x: 10, y: 10, w: 80, h: 80 });
@@ -289,7 +289,7 @@ export default function EditorPage() {
           const lx = (logoPos.x / 100) * canvas.width;
           const ly = (logoPos.y / 100) * canvas.height;
           ctx.drawImage(logo, lx, ly, lw, lh);
-          resolve(canvas.toDataURL('image/png'));
+          resolve(canvas.toDataURL('image/jpeg', 0.9));
         };
         logo.onerror = () => resolve(base64);
       };
