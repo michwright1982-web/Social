@@ -14,10 +14,11 @@ import {
   Zap,
   Sparkles,
   Target,
+  LogOut,
 } from 'lucide-react';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/studio', label: 'Creative Studio', icon: Wand2 },
   { href: '/editor', label: 'Unified Editor', icon: PenLine },
   { href: '/brand', label: 'Brand Identity', icon: Target },
@@ -304,9 +305,9 @@ export default function Sidebar() {
           );
         })}
 
-        {/* User avatar */}
+        {/* User avatar & Logout */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
+          display: 'flex', alignItems: 'center', gap: '8px',
           padding: '10px 12px', borderRadius: '12px', marginTop: '8px',
           background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)',
         }}>
@@ -323,6 +324,22 @@ export default function Sidebar() {
               Pro Plan
             </div>
           </div>
+          <button 
+            title="Log Out"
+            onClick={async () => {
+              await fetch('/api/user/logout', { method: 'POST' });
+              window.location.href = '/login';
+            }}
+            style={{ 
+              background: 'transparent', border: 'none', color: 'var(--text-muted)',
+              cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', borderRadius: '6px', transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </aside>
