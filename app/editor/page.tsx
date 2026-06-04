@@ -773,10 +773,14 @@ export default function EditorPage() {
                               key={layer.id}
                               onMouseDown={e => { e.stopPropagation(); setSelectedTextId(layer.id); startTextDrag(layer.id, e); }}
                               onClick={e => { e.stopPropagation(); setSelectedTextId(layer.id); if (activeTool !== 'text') setActiveTool('text'); }}
-                              onDoubleClick={e => { e.stopPropagation(); setEditingTextId(layer.id); }}
+                              onDoubleClick={e => { 
+                                e.stopPropagation(); 
+                                setEditingTextId(layer.id); 
+                                if (layer.text === 'Your Text') updateLayer(layer.id, { text: '' });
+                              }}
                               style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, cursor: 'grab', zIndex: 15, userSelect: 'none' }}
                             >
-                              <div style={{ transform: `rotate(${layer.rotation || 0}deg)`, outline: isSel ? '1.5px dashed rgba(167,139,250,0.75)' : 'none', outlineOffset: '5px', borderRadius: '3px', padding: '2px 5px', background: isSel ? 'rgba(124,58,237,0.06)' : 'transparent', width: 'max-content' }}>
+                              <div style={{ transform: `rotate(${layer.rotation || 0}deg)`, outline: isSel ? '1.5px dashed rgba(167,139,250,0.75)' : 'none', outlineOffset: '8px', borderRadius: '3px', padding: '6px 10px', background: isSel ? 'rgba(124,58,237,0.06)' : 'transparent', width: 'max-content' }}>
                                 {editingTextId === layer.id ? (
                                   <textarea
                                     autoFocus
@@ -973,9 +977,9 @@ export default function EditorPage() {
                           {/* Divider */}
                           <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
                           {/* Text input */}
-                          <input value={selectedLayer.text} onChange={e => updateLayer(selectedLayer.id, { text: e.target.value })}
-                            style={{ flex: 1, minWidth: '80px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '7px', color: 'var(--text-primary)', fontSize: '12px', padding: '5px 10px' }}
-                            placeholder="Edit text…" />
+                          <textarea value={selectedLayer.text} onChange={e => updateLayer(selectedLayer.id, { text: e.target.value })}
+                            style={{ flex: 1, minWidth: '150px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '7px', color: 'var(--text-primary)', fontSize: '12px', padding: '8px 10px', resize: 'vertical', minHeight: '36px', maxHeight: '120px', alignSelf: 'stretch', fontFamily: 'inherit', lineHeight: '1.4' }}
+                            placeholder="Type here..." />
                           {/* Delete */}
                           <button onClick={() => deleteLayer(selectedLayer.id)} title="Delete layer"
                             style={{ width: '28px', height: '28px', borderRadius: '7px', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
