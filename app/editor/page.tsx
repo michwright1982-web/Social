@@ -20,7 +20,7 @@ import Link from 'next/link';
 const platforms = [
   { id: 'facebook', label: 'Facebook', icon: FacebookIcon, color: '#1877F2', charLimit: 63206, tip: 'Longer posts with storytelling work best. Use emojis & strong CTAs.', maxHashtags: 10, aspectRatio: '1.91:1' },
   { id: 'instagram', label: 'Instagram', icon: InstagramIcon, color: '#E1306C', charLimit: 2200, tip: 'Punchy first line, heavy hashtags (up to 30), emojis encouraged.', maxHashtags: 30, aspectRatio: '1:1' },
-  { id: 'x (Twitter)', label: 'X (Twitter)', icon: XSocialIcon, color: 'currentColor', charLimit: 280, tip: 'Short & punchy. Max 280 chars. 1-2 hashtags is ideal.', maxHashtags: 2, aspectRatio: '16:9' },
+  { id: 'x (twitter)', label: 'X (Twitter)', icon: XSocialIcon, color: 'currentColor', charLimit: 280, tip: 'Short & punchy. Max 280 chars. 1-2 hashtags is ideal.', maxHashtags: 2, aspectRatio: '16:9' },
   { id: 'linkedin', label: 'LinkedIn', icon: LinkedinIcon, color: '#0A66C2', charLimit: 3000, tip: 'Professional tone. Thought leadership stories convert best.', maxHashtags: 5, aspectRatio: '1.91:1' },
 ];
 
@@ -43,6 +43,7 @@ interface TextLayer {
   fontWeight: '400' | '700' | '900';
   color: string;
   rotation?: number;
+  textAlign?: 'left' | 'center' | 'right';
 }
 
 interface ShapeLayer {
@@ -541,7 +542,14 @@ export default function EditorPage() {
           }
 
           let ly = ty;
-          for (const l of lines) { ctx.fillText(l, tx, ly); ly += sf * 1.25; }
+          ctx.textAlign = layer.textAlign || 'left';
+          for (const l of lines) {
+            let ltx = tx;
+            if (ctx.textAlign === 'center') ltx = tx + maxLineWidth / 2;
+            else if (ctx.textAlign === 'right') ltx = tx + maxLineWidth;
+            ctx.fillText(l, ltx, ly);
+            ly += sf * 1.25;
+          }
           ctx.restore();
         }
 
@@ -765,12 +773,28 @@ export default function EditorPage() {
                               key={layer.id}
                               onMouseDown={e => { e.stopPropagation(); setSelectedTextId(layer.id); startTextDrag(layer.id, e); }}
                               onClick={e => { e.stopPropagation(); setSelectedTextId(layer.id); if (activeTool !== 'text') setActiveTool('text'); }}
+                              onDoubleClick={e => { e.stopPropagation(); setEditingTextId(layer.id); }}
                               style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, cursor: 'grab', zIndex: 15, userSelect: 'none' }}
                             >
-                              <div style={{ transform: `rotate(${layer.rotation || 0}deg)`, outline: isSel ? '1.5px dashed rgba(167,139,250,0.75)' : 'none', outlineOffset: '5px', borderRadius: '3px', padding: '2px 5px', background: isSel ? 'rgba(124,58,237,0.06)' : 'transparent' }}>
-                                <span style={{ fontFamily: getBrandFontCss(layer.fontFamily), fontSize: `${sfs}px`, fontWeight: layer.fontWeight, color: layer.color, whiteSpace: 'pre-wrap', lineHeight: 1.2, textShadow: '0 2px 10px rgba(0,0,0,0.6)', display: 'block', maxWidth: `${cw * 0.85}px`, wordBreak: 'break-word' }}>
-                                  {layer.text}
-                                </span>
+                              <div style={{ transform: `rotate(${layer.rotation || 0}deg)`, outline: isSel ? '1.5px dashed rgba(167,139,250,0.75)' : 'none', outlineOffset: '5px', borderRadius: '3px', padding: '2px 5px', background: isSel ? 'rgba(124,58,237,0.06)' : 'transparent', width: 'max-content' }}>
+                                {editingTextId === layer.id ? (
+                                  <textarea
+                                    autoFocus
+                                    value={layer.text}
+                                    onChange={e => updateLayer(layer.id, { text: e.target.value })}
+                                    onBlur={() => setEditingTextId(null)}
+                                    onKeyDown={e => { if (e.key === 'Escape') setEditingTextId(null); e.stopPropagation(); }}
+                                    onMouseDown={e => e.stopPropagation()} // Prevent dragging while typing
+                                    style={{
+                                      fontFamily: getBrandFontCss(layer.fontFamily), fontSize: `${sfs}px`, fontWeight: layer.fontWeight, color: layer.color,
+                                      background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.2, textShadow: '0 2px 10px rgba(0,0,0,0.6)', maxWidth: `${cw * 0.85}px`, textAlign: layer.textAlign || 'left', minWidth: '100px', height: `${sfs * 1.5 * (layer.text.split('\\n').length || 1)}px`
+                                    }}
+                                  />
+                                ) : (
+                                  <span style={{ fontFamily: getBrandFontCss(layer.fontFamily), fontSize: `${sfs}px`, fontWeight: layer.fontWeight, color: layer.color, whiteSpace: 'pre-wrap', lineHeight: 1.2, textShadow: '0 2px 10px rgba(0,0,0,0.6)', display: 'block', maxWidth: `${cw * 0.85}px`, wordBreak: 'break-word', textAlign: layer.textAlign || 'left' }}>
+                                    {layer.text}
+                                  </span>
+                                )}
                               </div>
                               {/* small delete on selected */}
                               {isSel && (
@@ -923,6 +947,14 @@ export default function EditorPage() {
                                 {lbl}
                               </button>
                             ))}
+                          </div>
+                          {/* Divider */}
+                          <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
+                          {/* Alignment controls */}
+                          <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                            <button title="Align Left" onClick={() => updateLayer(selectedLayer.id, { textAlign: 'left' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyStart size={14} /></button>
+                            <button title="Align Center X" onClick={() => updateLayer(selectedLayer.id, { textAlign: 'center' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'center' ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'center' ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'center' ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyCenter size={14} /></button>
+                            <button title="Align Right" onClick={() => updateLayer(selectedLayer.id, { textAlign: 'right' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'right' ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'right' ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'right' ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyEnd size={14} /></button>
                           </div>
                           {/* Divider */}
                           <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
