@@ -21,8 +21,21 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // ── CSRF check ────────────────────────────────────────────────────────────
-  const storedState = req.cookies.get('oauth_state_fb')?.value;
+  // ── CSRF check & Recovery ──────────────────────────────────────────────────
+  const storedStateRaw = req.cookies.get('oauth_state_fb')?.value;
+  let storedState = '';
+  let companyId = 'default';
+  
+  if (storedStateRaw) {
+    try {
+      const parsed = JSON.parse(storedStateRaw);
+      storedState = parsed.state;
+      companyId = parsed.companyId || 'default';
+    } catch {
+      storedState = storedStateRaw;
+    }
+  }
+
   if (!state || state !== storedState) {
     return NextResponse.redirect(
       `${appUrl}/vault?error=facebook_state_mismatch`,
@@ -34,7 +47,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Exchange code → access token ──────────────────────────────────────────
-  const { clientId, clientSecret } = await getAppCredentials(req, 'facebook');
+  const { clientId, clientSecret } = await getAppCredentials(req, 'facebook', companyId);
   if (!clientId || !clientSecret) {
     console.error('[facebook/callback] Missing client ID or secret in config');
     return NextResponse.redirect(new URL('/vault?error=facebook_token_failed', req.url));
@@ -71,7 +84,7 @@ export async function GET(req: NextRequest) {
   const encrypted = await encryptToken(payload);
 
   const response = NextResponse.redirect(`${appUrl}/vault?connected=facebook`);
-  response.cookies.set('oauth_fb', encrypted, COOKIE_OPTIONS);
+  response.cookies.set(`oauth_fb_${companyId}`, encrypted, COOKIE_OPTIONS);
   response.cookies.delete('oauth_state_fb');
   return response;
 }

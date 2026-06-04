@@ -26,9 +26,11 @@ const PLATFORM_COOKIES: Record<string, string> = {
  * }
  */
 export async function GET(req: NextRequest) {
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
   const result: Record<string, { connected: boolean; handle?: string; connected_at?: number }> = {};
 
-  for (const [platform, cookieName] of Object.entries(PLATFORM_COOKIES)) {
+  for (const [platform, baseCookieName] of Object.entries(PLATFORM_COOKIES)) {
+    const cookieName = `${baseCookieName}_${companyId}`;
     const rawCookie = req.cookies.get(cookieName)?.value;
 
     if (!rawCookie) {
@@ -50,7 +52,8 @@ export async function GET(req: NextRequest) {
   }
 
   // --- Override Facebook status using oauth_app_creds ---
-  const credsCookie = req.cookies.get('oauth_app_creds')?.value;
+  const credsCookieName = `oauth_app_creds_${companyId}`;
+  const credsCookie = req.cookies.get(credsCookieName)?.value;
   if (credsCookie) {
     try {
       const decryptedCreds = await decryptToken(credsCookie);

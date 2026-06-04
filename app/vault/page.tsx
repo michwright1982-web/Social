@@ -95,11 +95,12 @@ function VaultContent() {
   // ── Load real OAuth status & configs on mount ─────────────────────────────
   const loadInitialData = useCallback(async () => {
     setStatusLoading(true);
+    const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
     try {
       const [statusRes, keysRes, credsRes] = await Promise.all([
-        fetch('/api/auth/status'),
-        fetch('/api/keys'),
-        fetch('/api/auth/credentials')
+        fetch(`/api/auth/status?companyId=${companyId}`),
+        fetch(`/api/keys?companyId=${companyId}`),
+        fetch(`/api/auth/credentials?companyId=${companyId}`)
       ]);
       
       if (statusRes.ok) setSocialStatuses(await statusRes.json());
@@ -150,11 +151,12 @@ function VaultContent() {
   // ── Disconnect a platform ──────────────────────────────────────────────────
   const handleDisconnect = async (platformId: string) => {
     setDisconnecting(platformId);
+    const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
     try {
       const res = await fetch('/api/auth/disconnect', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ platform: platformId }),
+        body:    JSON.stringify({ platform: platformId, companyId }),
       });
       if (res.ok) {
         setSocialStatuses(prev => ({ ...prev, [platformId]: { connected: false } }));
@@ -208,7 +210,8 @@ function VaultContent() {
 
   const saveKeysToApi = async (newKeys: ApiKey[]) => {
     try {
-      const res = await fetch('/api/keys', {
+      const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+      const res = await fetch(`/api/keys?companyId=${companyId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newKeys)
@@ -261,8 +264,9 @@ function VaultContent() {
   const handleSaveCreds = async () => {
     if (!editingCredsPlatform) return;
     setSavingCreds(true);
+    const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
     try {
-      const res = await fetch('/api/auth/credentials', {
+      const res = await fetch(`/api/auth/credentials?companyId=${companyId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -285,7 +289,8 @@ function VaultContent() {
 
   const handleClearCreds = async (platformId: string) => {
     try {
-      await fetch('/api/auth/credentials', {
+      const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+      await fetch(`/api/auth/credentials?companyId=${companyId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [platformId]: { clientId: '', clientSecret: '' } })
@@ -654,7 +659,7 @@ function VaultContent() {
                         ) : (
                           /* Full-page redirect — no JS fetch needed */
                           <a
-                            href={`/api/auth/${platform.id}/connect`}
+                            href={`/api/auth/${platform.id}/connect?companyId=${typeof window !== 'undefined' ? (localStorage.getItem('ai_marketing_active_company_id') || 'default') : 'default'}`}
                             style={{ flex: 1, textDecoration: 'none' }}
                             id={`connect-${platform.id}`}
                           >

@@ -26,7 +26,9 @@ const HUGGING_FACE_MODELS = [
 ];
 
 export async function GET(req: NextRequest) {
-  const rawCookie = req.cookies.get('ai_provider_keys')?.value;
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const keysCookieName = `ai_provider_keys_${companyId}`;
+  const rawCookie = req.cookies.get(keysCookieName)?.value;
   if (!rawCookie) {
     return NextResponse.json({
       providers: [],

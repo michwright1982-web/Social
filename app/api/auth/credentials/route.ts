@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encryptToken, decryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
 
-const OAUTH_CREDS_COOKIE = 'oauth_app_creds';
+const OAUTH_CREDS_COOKIE_PREFIX = 'oauth_app_creds_';
 
 export type OAuthAppCredentials = {
   [platform: string]: {
@@ -15,7 +15,9 @@ export type OAuthAppCredentials = {
  * Returns saved OAuth App credentials from the encrypted cookie.
  */
 export async function GET(req: NextRequest) {
-  const rawCookie = req.cookies.get(OAUTH_CREDS_COOKIE)?.value;
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const cookieName = `${OAUTH_CREDS_COOKIE_PREFIX}${companyId}`;
+  const rawCookie = req.cookies.get(cookieName)?.value;
   if (!rawCookie) {
     return NextResponse.json({});
   }
@@ -47,6 +49,9 @@ export async function GET(req: NextRequest) {
  * we keep the old secret (since the UI might mask it).
  */
 export async function POST(req: NextRequest) {
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const cookieName = `${OAUTH_CREDS_COOKIE_PREFIX}${companyId}`;
+
   let newCreds: Record<string, { clientId: string; clientSecret?: string }> = {};
   try {
     newCreds = await req.json();
@@ -56,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   // Read existing credentials first
   let existingCreds: OAuthAppCredentials = {};
-  const rawCookie = req.cookies.get(OAUTH_CREDS_COOKIE)?.value;
+  const rawCookie = req.cookies.get(cookieName)?.value;
   if (rawCookie) {
     try {
       const decrypted = await decryptToken(rawCookie);
@@ -88,6 +93,6 @@ export async function POST(req: NextRequest) {
   const encrypted = await encryptToken(payload);
 
   const response = NextResponse.json({ success: true });
-  response.cookies.set(OAUTH_CREDS_COOKIE, encrypted, COOKIE_OPTIONS);
+  response.cookies.set(cookieName, encrypted, COOKIE_OPTIONS);
   return response;
 }

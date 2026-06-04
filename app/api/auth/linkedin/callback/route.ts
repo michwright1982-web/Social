@@ -19,8 +19,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appUrl}/vault?error=linkedin_denied`);
   }
 
-  // ── CSRF check ────────────────────────────────────────────────────────────
-  const storedState = req.cookies.get('oauth_state_li')?.value;
+  // ── CSRF check & Recovery ──────────────────────────────────────────────────
+  const storedStateRaw = req.cookies.get('oauth_state_li')?.value;
+  let storedState = '';
+  let companyId = 'default';
+  
+  if (storedStateRaw) {
+    try {
+      const parsed = JSON.parse(storedStateRaw);
+      storedState = parsed.state;
+      companyId = parsed.companyId || 'default';
+    } catch {
+      storedState = storedStateRaw;
+    }
+  }
+
   if (!state || state !== storedState) {
     return NextResponse.redirect(`${appUrl}/vault?error=linkedin_state_mismatch`);
   }
@@ -30,7 +43,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Exchange code → access token ──────────────────────────────────────────
-  const { clientId, clientSecret } = await getAppCredentials(req, 'linkedin');
+  const { clientId, clientSecret } = await getAppCredentials(req, 'linkedin', companyId);
   if (!clientId || !clientSecret) {
     console.error('[linkedin/callback] Missing client ID or secret in config');
     return NextResponse.redirect(new URL('/vault?error=linkedin_token_failed', req.url));
@@ -71,7 +84,7 @@ export async function GET(req: NextRequest) {
   const encrypted = await encryptToken(payload);
 
   const response = NextResponse.redirect(`${appUrl}/vault?connected=linkedin`);
-  response.cookies.set('oauth_li', encrypted, COOKIE_OPTIONS);
+  response.cookies.set(`oauth_li_${companyId}`, encrypted, COOKIE_OPTIONS);
   response.cookies.delete('oauth_state_li');
   return response;
 }

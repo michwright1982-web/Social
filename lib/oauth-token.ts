@@ -86,9 +86,10 @@ export const COOKIE_OPTIONS = {
 
 // ── App Credentials Helper ───────────────────────────────────────────────────
 
-/** Reads configured OAuth Client ID & Secret from the encrypted cookie */
-export async function getAppCredentials(req: import('next/server').NextRequest, platform: string) {
-  const rawCookie = req.cookies.get('oauth_app_creds')?.value;
+/** Reads configured OAuth Client ID & Secret from the encrypted cookie for a specific company */
+export async function getAppCredentials(req: import('next/server').NextRequest, platform: string, companyId: string) {
+  const cookieName = `oauth_app_creds_${companyId}`;
+  const rawCookie = req.cookies.get(cookieName)?.value;
   let clientId = '';
   let clientSecret = '';
 

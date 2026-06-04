@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encryptToken, decryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
 
-const AI_KEYS_COOKIE = 'ai_provider_keys';
+const AI_KEYS_COOKIE_PREFIX = 'ai_provider_keys_';
 
 interface ApiKey {
   id: string;
@@ -17,7 +17,9 @@ interface ApiKey {
  * Returns all saved AI keys from the encrypted cookie.
  */
 export async function GET(req: NextRequest) {
-  const rawCookie = req.cookies.get(AI_KEYS_COOKIE)?.value;
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const cookieName = `${AI_KEYS_COOKIE_PREFIX}${companyId}`;
+  const rawCookie = req.cookies.get(cookieName)?.value;
   if (!rawCookie) {
     return NextResponse.json([]);
   }
@@ -37,6 +39,9 @@ export async function GET(req: NextRequest) {
  * Expects an array of ApiKey objects. Encrypts and saves to cookie.
  */
 export async function POST(req: NextRequest) {
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const cookieName = `${AI_KEYS_COOKIE_PREFIX}${companyId}`;
+  
   let keys: ApiKey[] = [];
   try {
     keys = await req.json();
@@ -49,7 +54,7 @@ export async function POST(req: NextRequest) {
     const encrypted = await encryptToken(payload);
 
     const response = NextResponse.json({ success: true });
-    response.cookies.set(AI_KEYS_COOKIE, encrypted, COOKIE_OPTIONS);
+    response.cookies.set(cookieName, encrypted, COOKIE_OPTIONS);
     return response;
   } catch (error) {
     console.error('Failed to save API keys:', error);

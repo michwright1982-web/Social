@@ -203,7 +203,8 @@ export default function StudioPage() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/models')
+    const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+    fetch(`/api/models?companyId=${companyId}`)
       .then(res => res.json())
       .then(data => {
         const { providers, models } = data;
@@ -268,6 +269,7 @@ export default function StudioPage() {
       // For now, we will generate 1 real image and duplicate it for the demo variations 
       // if the API only returns 1, to match the UI behavior without breaking the bank.
       const selectedStyleObj = STYLES.find(s => s.id === selectedStyle);
+      const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
       const res = await fetch('/api/studio/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,7 +282,8 @@ export default function StudioPage() {
           ratio: aspectRatio,
           variations: numVariations,
           openAiSize,
-          openAiQuality
+          openAiQuality,
+          companyId: currentCompanyId
         })
       });
 

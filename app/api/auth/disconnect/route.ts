@@ -13,7 +13,7 @@ const PLATFORM_COOKIES: Record<string, string> = {
  * Deletes the OAuth cookie for the given platform, effectively disconnecting it.
  */
 export async function POST(req: NextRequest) {
-  let body: { platform?: string };
+  let body: { platform?: string; companyId?: string };
 
   try {
     body = await req.json();
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { platform } = body;
+  const { platform, companyId = 'default' } = body;
 
   if (!platform || !PLATFORM_COOKIES[platform]) {
     return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const cookieName = PLATFORM_COOKIES[platform];
+  const cookieName = `${PLATFORM_COOKIES[platform]}_${companyId}`;
 
   const response = NextResponse.json({ success: true, platform });
   response.cookies.set(cookieName, '', {

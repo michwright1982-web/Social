@@ -106,7 +106,7 @@ export default function BrandIdentityPage() {
     localStorage.setItem('ai_marketing_active_company_id', updatedCompany.id);
 
     try {
-      const res = await fetch('/api/brand', {
+      const res = await fetch(`/api/brand?companyId=${updatedCompany.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context: brandContext, font: brandFont, color: brandColors, name: companyName }),
@@ -139,7 +139,8 @@ export default function BrandIdentityPage() {
     localStorage.setItem('ai_marketing_active_company_id', newActiveId);
     
     const newActive = newCompanies[0];
-    await fetch('/api/brand', {
+    // Also update server-side cookie so generation gets the correct context
+    await fetch(`/api/brand?companyId=${newActiveId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ context: newActive.context, font: newActive.font, color: newActive.colors, name: newActive.name }),

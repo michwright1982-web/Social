@@ -9,7 +9,8 @@ import { getAppCredentials } from '@/lib/oauth-token';
  */
 export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const { clientId } = await getAppCredentials(req, 'facebook');
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const { clientId } = await getAppCredentials(req, 'facebook', companyId);
 
   if (!clientId) {
     return NextResponse.redirect(new URL('/vault?error=missing_credentials', req.url));
@@ -35,8 +36,9 @@ export async function GET(req: NextRequest) {
     `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`,
   );
 
-  // Store state in a short-lived HttpOnly cookie for CSRF validation
-  response.cookies.set('oauth_state_fb', state, {
+  // Store state + companyId in a short-lived HttpOnly cookie for CSRF validation and recovery
+  const cookiePayload = JSON.stringify({ state, companyId });
+  response.cookies.set('oauth_state_fb', cookiePayload, {
     httpOnly: true,
     secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',

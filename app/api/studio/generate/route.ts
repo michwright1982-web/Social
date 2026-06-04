@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     variations?: number;
     openAiSize?: string;
     openAiQuality?: string;
+    companyId?: string;
   };
   try {
     body = await req.json();
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { prompt, provider, model, style = 'Photorealistic', styleRules = '', ratio = '1:1' } = body;
+  const { prompt, provider, model, style = 'Photorealistic', styleRules = '', ratio = '1:1', companyId = 'default' } = body;
   if (!prompt || !provider) {
     return NextResponse.json({ error: 'prompt and provider are required' }, { status: 400 });
   }
@@ -36,7 +37,8 @@ export async function POST(req: NextRequest) {
 
   // 1. Get Brand Context
   let brandRules = '';
-  const brandCookie = req.cookies.get('ai_brand_context')?.value;
+  const brandCookieName = `ai_brand_context_${companyId}`;
+  const brandCookie = req.cookies.get(brandCookieName)?.value;
   if (brandCookie) {
     try {
       const decryptedBrand = await decryptToken(brandCookie);
@@ -57,7 +59,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Get API Key for the requested provider from the cookie
-  const rawCookie = req.cookies.get('ai_provider_keys')?.value;
+  const keysCookieName = `ai_provider_keys_${companyId}`;
+  const rawCookie = req.cookies.get(keysCookieName)?.value;
   if (!rawCookie) {
     return NextResponse.json({ error: 'No API keys configured. Please add one in the Secure Vault.' }, { status: 401 });
   }
@@ -76,9 +79,12 @@ export async function POST(req: NextRequest) {
   }
   providerKey = foundKey;
 
+  // Text safe-zone rule: all text/typography must be inset at least 20px from every edge
+  const textSafeZoneRule = '\n\nTEXT PLACEMENT RULE (MANDATORY): Any and all text, headlines, captions, labels, or typographic elements that appear in the image MUST be placed with a minimum inset/padding of 20 pixels from every edge of the image (top, bottom, left, and right). No text may touch or bleed beyond the 20px safe zone border on any side.';
+
   const enhancedPrompt = styleRules 
-    ? `${prompt}. Strict Style Rules to follow:\n${styleRules}\nMaintain high quality, highly detailed composition.${brandRules}`
-    : `${prompt}, style: ${style}, high quality, detailed.${brandRules}`;
+    ? `${prompt}. Strict Style Rules to follow:\n${styleRules}\nMaintain high quality, highly detailed composition.${brandRules}${textSafeZoneRule}`
+    : `${prompt}, style: ${style}, high quality, detailed.${brandRules}${textSafeZoneRule}`;
 
   try {
     if (provider === 'Google AI Studio') {

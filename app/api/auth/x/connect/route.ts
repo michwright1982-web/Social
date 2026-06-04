@@ -8,7 +8,8 @@ import { encryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-tok
  */
 export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const { clientId } = await getAppCredentials(req, 'x');
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const { clientId } = await getAppCredentials(req, 'x', companyId);
 
   if (!clientId) {
     return NextResponse.redirect(new URL('/vault?error=missing_credentials', req.url));
@@ -35,9 +36,10 @@ export async function GET(req: NextRequest) {
     `https://twitter.com/i/oauth2/authorize?${params.toString()}`,
   );
 
-  // Store PKCE verifier and state in short-lived cookies
+  // Store PKCE verifier and state + companyId in short-lived cookies
   const cookieOpts = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, maxAge: 600, path: '/' };
-  response.cookies.set('oauth_state_x', state, cookieOpts);
+  const cookiePayload = JSON.stringify({ state, companyId });
+  response.cookies.set('oauth_state_x', cookiePayload, cookieOpts);
   response.cookies.set('oauth_pkce_x', await encryptToken(codeVerifier), cookieOpts);
 
   return response;

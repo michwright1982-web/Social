@@ -8,7 +8,8 @@ import { getAppCredentials } from '@/lib/oauth-token';
  */
 export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const { clientId } = await getAppCredentials(req, 'linkedin');
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const { clientId } = await getAppCredentials(req, 'linkedin', companyId);
 
   if (!clientId) {
     return NextResponse.redirect(new URL('/vault?error=missing_credentials', req.url));
@@ -29,7 +30,8 @@ export async function GET(req: NextRequest) {
     `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`,
   );
 
-  response.cookies.set('oauth_state_li', state, {
+  const cookiePayload = JSON.stringify({ state, companyId });
+  response.cookies.set('oauth_state_li', cookiePayload, {
     httpOnly: true,
     secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encryptToken, decryptToken, COOKIE_OPTIONS } from '@/lib/oauth-token';
 
-const BRAND_CONTEXT_COOKIE = 'ai_brand_context';
+const BRAND_CONTEXT_COOKIE_PREFIX = 'ai_brand_context_';
 
 export async function GET(req: NextRequest) {
-  const rawCookie = req.cookies.get(BRAND_CONTEXT_COOKIE)?.value;
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const cookieName = `${BRAND_CONTEXT_COOKIE_PREFIX}${companyId}`;
+  const rawCookie = req.cookies.get(cookieName)?.value;
   if (!rawCookie) {
     return NextResponse.json({ context: '', font: '', color: '' });
   }
@@ -25,6 +27,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
+  const cookieName = `${BRAND_CONTEXT_COOKIE_PREFIX}${companyId}`;
+
   try {
     const body = await req.json();
     const contextStr = JSON.stringify({
@@ -37,7 +42,7 @@ export async function POST(req: NextRequest) {
     const encrypted = await encryptToken(contextStr);
 
     const response = NextResponse.json({ success: true });
-    response.cookies.set(BRAND_CONTEXT_COOKIE, encrypted, COOKIE_OPTIONS);
+    response.cookies.set(cookieName, encrypted, COOKIE_OPTIONS);
     return response;
   } catch (error) {
     console.error('Failed to save brand context:', error);

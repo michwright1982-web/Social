@@ -3,13 +3,14 @@ import { decryptToken } from '@/lib/oauth-token';
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64 } = await req.json();
+    const { imageBase64, companyId = 'default' } = await req.json();
 
     if (!imageBase64) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
-    const rawCookie = req.cookies.get('ai_provider_keys')?.value;
+    const keysCookieName = `ai_provider_keys_${companyId}`;
+    const rawCookie = req.cookies.get(keysCookieName)?.value;
     if (!rawCookie) {
       return NextResponse.json({ error: 'No API keys configured. Please add an OpenAI key in the Secure Vault.' }, { status: 401 });
     }
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to decrypt API keys' }, { status: 500 });
     }
 
-    const brandCookie = req.cookies.get('ai_brand_context')?.value;
+    const brandCookieName = `ai_brand_context_${companyId}`;
+    const brandCookie = req.cookies.get(brandCookieName)?.value;
     if (brandCookie) {
       try {
         brandContext = await decryptToken(brandCookie);
