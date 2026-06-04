@@ -741,6 +741,7 @@ export default function StudioPage() {
                 {/* ── Existing Styles Map ── */}
                 {(STYLES.concat(customStyles)).map(style => {
                   const isSelected = selectedStyle === style.id;
+                  const isCustom = !STYLES.some(s => s.id === style.id);
                   return (
                     <div
                       key={style.id}
@@ -813,6 +814,31 @@ export default function StudioPage() {
                       >
                         <Sliders size={12} />
                       </div>
+
+                      {/* Delete Custom Style Button */}
+                      {isCustom && (
+                        <div
+                          title="Delete custom style"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newStyles = customStyles.filter(s => s.id !== style.id);
+                            setCustomStyles(newStyles);
+                            const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                            saveToImageDB(`creative_studio_custom_styles_${activeId}`, newStyles).catch(err => console.warn(err));
+                            if (selectedStyle === style.id) setSelectedStyle(STYLES[0].id);
+                            if (activeTooltip === style.id) setActiveTooltip(null);
+                          }}
+                          style={{
+                            position: 'absolute', top: '10px', right: isSelected ? '40px' : '10px', width: '24px', height: '24px', borderRadius: '50%',
+                            background: 'rgba(239, 68, 68, 0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', zIndex: 20, color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 1)'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.7)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                        >
+                          <Trash2 size={12} />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -822,7 +848,7 @@ export default function StudioPage() {
             {/* ── AI Style Rules Modal ─────────────────────────────────────────── */}
             <AnimatePresence>
               {activeTooltip && (() => {
-                const activeStyle = STYLES.find(s => s.id === activeTooltip);
+                const activeStyle = STYLES.concat(customStyles).find(s => s.id === activeTooltip);
                 if (!activeStyle) return null;
                 return (
                   <motion.div
