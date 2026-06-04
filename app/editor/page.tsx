@@ -542,6 +542,7 @@ export default function EditorPage() {
           if (layer.textAlign === 'center') cx = tx;
           else if (layer.textAlign === 'right') cx = tx - maxLineWidth / 2;
           
+          const totalHeight = lines.length * (sf * 1.25);
           const cy = ty + totalHeight / 2;
 
           if (layer.rotation) {
@@ -1139,7 +1140,7 @@ export default function EditorPage() {
                         <span style={{ fontSize: '10px', fontWeight: 600, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: enabledPlatforms[p.id] ? 1 : 0.35 }}>{p.label.split(' ')[0]}</span>
                         <span style={{ fontSize: '9px', fontWeight: 500, color: isActive ? p.color : 'var(--text-muted)', opacity: enabledPlatforms[p.id] ? 0.85 : 0.35 }}>({p.aspectRatio})</span>
                         {!enabledPlatforms[p.id] && <span style={{ position: 'absolute', top: 4, right: 4, fontSize: '7px', color: 'var(--text-muted)', fontWeight: 700, background: 'var(--bg-secondary)', padding: '1px 3px', borderRadius: '3px' }}>SKIP</span>}
-                        {s.status !== 'idle' && <span style={{ position: 'absolute', top: 4, left: 4 }}>{statusIcon(s.status)}</span>}
+                        {s?.status !== 'idle' && s?.status !== undefined && <span style={{ position: 'absolute', top: 4, left: 4 }}>{statusIcon(s.status)}</span>}
                       </button>
                     );
                   })}
@@ -1153,7 +1154,7 @@ export default function EditorPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                           {(() => { const Icon = platform.icon; return <Icon size={16} color={platform.color} />; })()}
                           <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{platform.label}</span>
-                          {platformStatuses[activePlatform].status !== 'idle' && statusIcon(platformStatuses[activePlatform].status)}
+                          {platformStatuses[activePlatform]?.status !== 'idle' && platformStatuses[activePlatform]?.status !== undefined && statusIcon(platformStatuses[activePlatform].status)}
                         </div>
                         <p style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '320px', lineHeight: 1.5 }}>{platform.tip}</p>
                       </div>
@@ -1218,7 +1219,7 @@ export default function EditorPage() {
                         return (
                           <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Icon size={14} color={p.color} /><span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>{p.label}</span></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>{statusIcon(s.status)}<span style={{ fontSize: '11px', color: s.status === 'success' ? '#34d399' : s.status === 'error' ? '#f87171' : s.status === 'publishing' ? '#fbbf24' : '#475569' }}>{s.status === 'idle' ? 'Queued' : s.status === 'publishing' ? 'Publishing…' : s.message}</span></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>{s?.status && statusIcon(s.status)}<span style={{ fontSize: '11px', color: s?.status === 'success' ? '#34d399' : s?.status === 'error' ? '#f87171' : s?.status === 'publishing' ? '#fbbf24' : '#475569' }}>{s?.status === 'idle' ? 'Queued' : s?.status === 'publishing' ? 'Publishing…' : s?.message}</span></div>
                           </div>
                         );
                       })}
