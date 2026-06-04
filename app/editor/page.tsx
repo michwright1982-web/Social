@@ -538,8 +538,10 @@ export default function EditorPage() {
             maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
           }
 
-          const totalHeight = lines.length * (sf * 1.25);
-          const cx = tx + maxLineWidth / 2;
+          let cx = tx + maxLineWidth / 2;
+          if (layer.textAlign === 'center') cx = tx;
+          else if (layer.textAlign === 'right') cx = tx - maxLineWidth / 2;
+          
           const cy = ty + totalHeight / 2;
 
           if (layer.rotation) {
@@ -551,10 +553,7 @@ export default function EditorPage() {
           let ly = ty;
           ctx.textAlign = layer.textAlign || 'left';
           for (const l of lines) {
-            let ltx = tx;
-            if (ctx.textAlign === 'center') ltx = tx + maxLineWidth / 2;
-            else if (ctx.textAlign === 'right') ltx = tx + maxLineWidth;
-            ctx.fillText(l, ltx, ly);
+            ctx.fillText(l, tx, ly);
             ly += sf * 1.25;
           }
           ctx.restore();
@@ -787,7 +786,7 @@ export default function EditorPage() {
                               }}
                               style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, cursor: 'grab', zIndex: 15, userSelect: 'none' }}
                             >
-                              <div style={{ transform: `rotate(${layer.rotation || 0}deg)`, outline: isSel ? '1.5px dashed rgba(167,139,250,0.75)' : 'none', outlineOffset: '8px', borderRadius: '3px', padding: '6px 10px', background: isSel ? 'rgba(124,58,237,0.06)' : 'transparent', width: 'max-content' }}>
+                              <div style={{ transform: `translate(${layer.textAlign === 'center' ? '-50%' : layer.textAlign === 'right' ? '-100%' : '0'}, 0) rotate(${layer.rotation || 0}deg)`, outline: isSel ? '1.5px dashed rgba(167,139,250,0.75)' : 'none', outlineOffset: '8px', borderRadius: '3px', padding: '6px 10px', background: isSel ? 'rgba(124,58,237,0.06)' : 'transparent', width: 'max-content' }}>
                                 {editingTextId === layer.id ? (
                                   <textarea
                                     autoFocus
@@ -963,9 +962,9 @@ export default function EditorPage() {
                           <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
                           {/* Alignment controls */}
                           <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-                            <button title="Align Left" onClick={() => updateLayer(selectedLayer.id, { textAlign: 'left' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyStart size={14} /></button>
-                            <button title="Align Center X" onClick={() => updateLayer(selectedLayer.id, { textAlign: 'center' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'center' ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'center' ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'center' ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyCenter size={14} /></button>
-                            <button title="Align Right" onClick={() => updateLayer(selectedLayer.id, { textAlign: 'right' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'right' ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'right' ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'right' ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyEnd size={14} /></button>
+                            <button title="Align Left to Image" onClick={() => updateLayer(selectedLayer.id, { x: 5, textAlign: 'left' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'left' || !selectedLayer.textAlign ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyStart size={14} /></button>
+                            <button title="Align Center in Image" onClick={() => updateLayer(selectedLayer.id, { x: 50, textAlign: 'center' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'center' ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'center' ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'center' ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyCenter size={14} /></button>
+                            <button title="Align Right to Image" onClick={() => updateLayer(selectedLayer.id, { x: 95, textAlign: 'right' })} style={{ padding: '4px', borderRadius: '4px', border: selectedLayer.textAlign === 'right' ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.textAlign === 'right' ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.textAlign === 'right' ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyEnd size={14} /></button>
                           </div>
                           {/* Divider */}
                           <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
