@@ -515,21 +515,28 @@ export default function EditorPage() {
           ctx.fillStyle = layer.color; ctx.textBaseline = 'top';
           ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = sf * 0.3; ctx.shadowOffsetY = sf * 0.05;
           const tx = (layer.x / 100) * canvas.width; const ty = (layer.y / 100) * canvas.height;
-          const maxW = canvas.width - tx - 20;
+          const maxW = canvas.width * 0.85;
 
           let maxLineWidth = 0;
           const lines: string[] = [];
-          const words = layer.text.split(' '); let line = '';
-          for (const w of words) {
-            const t = line ? `${line} ${w}` : w;
-            const mw = ctx.measureText(t).width;
-            if (mw > maxW && line) {
-              lines.push(line);
-              maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
-              line = w;
-            } else line = t;
+          const paragraphs = layer.text.split('\n');
+          for (const p of paragraphs) {
+            const words = p.split(' ');
+            let line = '';
+            for (const w of words) {
+              const t = line ? `${line} ${w}` : w;
+              const mw = ctx.measureText(t).width;
+              if (mw > maxW && line) {
+                lines.push(line);
+                maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
+                line = w;
+              } else {
+                line = t;
+              }
+            }
+            lines.push(line); 
+            maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
           }
-          lines.push(line); maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
 
           const totalHeight = lines.length * (sf * 1.25);
           const cx = tx + maxLineWidth / 2;
