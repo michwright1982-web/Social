@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
@@ -9,19 +10,20 @@ import {
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
+import { loadFromImageDB } from '@/lib/image-db';
 
-const statCards = [
-  { label: 'Total Campaigns', icon: TrendingUp, color: '#7c3aed' },
-  { label: 'Images Generated', icon: Image, color: '#06b6d4' },
-  { label: 'Posts Published', icon: Send, color: '#10b981' },
-  { label: 'Audience Reach', icon: Users, color: '#ec4899' },
+const statCardsTemplate = [
+  { label: 'Total Campaigns', icon: TrendingUp, color: '#7c3aed', key: 'campaigns' },
+  { label: 'Images Generated', icon: Image, color: '#06b6d4', key: 'images' },
+  { label: 'Posts Published', icon: Send, color: '#10b981', key: 'posts' },
+  { label: 'Audience Reach', icon: Users, color: '#ec4899', key: 'reach' },
 ];
 
-const platformHealth = [
-  { name: 'Facebook', icon: <FacebookIcon size={14} /> },
-  { name: 'Instagram', icon: <InstagramIcon size={14} /> },
-  { name: 'X (Twitter)', icon: <XSocialIcon size={14} /> },
-  { name: 'LinkedIn', icon: <LinkedinIcon size={14} /> },
+const platformsConfig = [
+  { id: 'facebook', name: 'Facebook', icon: <FacebookIcon size={14} /> },
+  { id: 'instagram', name: 'Instagram', icon: <InstagramIcon size={14} /> },
+  { id: 'x', name: 'X (Twitter)', icon: <XSocialIcon size={14} /> },
+  { id: 'linkedin', name: 'LinkedIn', icon: <LinkedinIcon size={14} /> },
 ];
 
 const container = {
@@ -34,6 +36,42 @@ const item = {
 };
 
 export default function Dashboard() {
+  const [stats, setStats] = useState({ campaigns: 0, images: 0, posts: 0, reach: 0 });
+  const [platformStatuses, setPlatformStatuses] = useState<Record<string, { status: string }>>({});
+
+  const loadDashboardData = async () => {
+    const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+    
+    // Load images count
+    try {
+      const history = await loadFromImageDB(`creative_studio_history_${activeId}`);
+      let imageCount = 0;
+      if (Array.isArray(history)) {
+        imageCount = history.reduce((acc, run) => acc + (run.images?.length || 0), 0);
+      }
+      setStats(s => ({ ...s, images: imageCount, campaigns: Array.isArray(history) ? history.length : 0 }));
+    } catch {}
+
+    // Load auth status
+    try {
+      const res = await fetch(`/api/auth/status?companyId=${activeId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPlatformStatuses(data);
+      } else {
+        setPlatformStatuses({});
+      }
+    } catch {
+      setPlatformStatuses({});
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+    window.addEventListener('brand-updated', loadDashboardData);
+    return () => window.removeEventListener('brand-updated', loadDashboardData);
+  }, []);
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -44,8 +82,9 @@ export default function Dashboard() {
 
             {/* Stats Row */}
             <motion.div variants={item} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
-              {statCards.map((stat) => {
+              {statCardsTemplate.map((stat) => {
                 const Icon = stat.icon;
+                const value = stats[stat.key as keyof typeof stats] || 0;
                 return (
                   <div key={stat.label} className="glass-card" style={{ padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -54,7 +93,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif", letterSpacing: '-1px' }}>
-                      —
+                      {value > 0 ? value : '—'}
                     </div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 500 }}>{stat.label}</div>
                   </div>
@@ -122,15 +161,20 @@ export default function Dashboard() {
                 {/* Platform Health */}
                 <motion.div variants={item} className="glass-card" style={{ padding: '20px' }}>
                   <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px' }}>Platform Health</h2>
-                  {platformHealth.map(p => (
-                    <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {p.icon}
-                        <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{p.name}</span>
+                  {platformsConfig.map(p => {
+                    const isConnected = platformStatuses[p.id]?.status === 'valid';
+                    return (
+                      <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {p.icon}
+                          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{p.name}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: isConnected ? '#10b981' : 'var(--text-muted)', fontWeight: 500 }}>
+                          {isConnected ? 'Connected' : 'Not connected'}
+                        </span>
                       </div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Not connected</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <Link href="/vault" style={{ textDecoration: 'none' }}>
                     <button className="btn-ghost" style={{ width: '100%', justifyContent: 'center', marginTop: '8px', fontSize: '12px', padding: '8px' }}>
                       Manage Connections

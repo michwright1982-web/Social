@@ -189,21 +189,19 @@ export default function StudioPage() {
     return () => window.removeEventListener('brand-updated', loadHistory);
   }, [loadHistory]);
 
-  // Restore previously selected image IDs when Studio opens (persist across Editor nav)
-  useEffect(() => {
-    const restoreSelection = async () => {
-      const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-      const savedUrls = await loadFromImageDB(`creative_studio_selected_images_${activeId}`);
-      if (Array.isArray(savedUrls) && savedUrls.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setPersistedSelectedUrls(savedUrls);
-      }
-    };
-    restoreSelection();
-  }, []);
+  const restoreSelection = async () => {
+    const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+    const savedUrls = await loadFromImageDB(`creative_studio_selected_images_${activeId}`);
+    if (Array.isArray(savedUrls) && savedUrls.length > 0) {
+      setPersistedSelectedUrls(savedUrls);
+    } else {
+      setPersistedSelectedUrls([]);
+    }
+  };
 
-  useEffect(() => {
+  const loadModels = () => {
     const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+    setIsLoadingKeys(true);
     fetch(`/api/models?companyId=${companyId}`)
       .then(res => res.json())
       .then(data => {
@@ -215,10 +213,21 @@ export default function StudioPage() {
           setSelectedProvider(providers[0]);
           const firstModel = models?.find((m: { provider: string; id: string }) => m.provider === providers[0]);
           if (firstModel) setSelectedModel(firstModel.id);
+        } else {
+          setSelectedProvider('none');
         }
         setIsLoadingKeys(false);
       })
       .catch(() => setIsLoadingKeys(false));
+  };
+
+  // Run on mount and when brand updates
+  useEffect(() => {
+    restoreSelection();
+    loadModels();
+    const handleUpdate = () => { restoreSelection(); loadModels(); };
+    window.addEventListener('brand-updated', handleUpdate);
+    return () => window.removeEventListener('brand-updated', handleUpdate);
   }, []);
 
   // Close AI rules modal on Escape key

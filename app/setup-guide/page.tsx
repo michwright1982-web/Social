@@ -19,7 +19,7 @@ import Image from 'next/image';
 
 const PLATFORMS = [
   { id: 'facebook', label: 'Facebook / Instagram', icon: <FacebookIcon size={16} />, color: '#1877F2' },
-  { id: 'x', label: 'X (Twitter)', icon: <XSocialIcon size={16} />, color: '#ffffff' },
+  { id: 'x', label: 'X (Twitter)', icon: <XSocialIcon size={16} />, color: 'currentColor' },
   { id: 'linkedin', label: 'LinkedIn', icon: <LinkedinIcon size={16} />, color: '#0A66C2' },
 ];
 

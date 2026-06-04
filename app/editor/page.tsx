@@ -8,7 +8,9 @@ import Topbar from '@/components/Topbar';
 import {
   Send, Check, Copy, RefreshCw, Sparkles, AlertCircle, CheckCircle2,
   Loader2, Hash, AtSign, Clock, Zap, Globe, ImageIcon, Upload, X,
-  Crop, Eye, EyeOff, Type, Plus, Trash2, ChevronDown, Square, MousePointer2, Circle, Triangle, Hexagon
+  Crop, Eye, EyeOff, Type, Plus, Trash2, ChevronDown, Square, MousePointer2, Circle, Triangle, Hexagon,
+  AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd,
+  AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd
 } from 'lucide-react';
 import { loadFromImageDB, saveToImageDB } from '@/lib/image-db';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
@@ -16,18 +18,18 @@ import Link from 'next/link';
 
 // ─── Platform definitions ─────────────────────────────────────────────────────
 const platforms = [
-  { id: 'facebook',  label: 'Facebook',   icon: FacebookIcon,   color: '#1877F2', charLimit: 63206, tip: 'Longer posts with storytelling work best. Use emojis & strong CTAs.', maxHashtags: 10,  aspectRatio: '1.91:1' },
-  { id: 'instagram', label: 'Instagram',  icon: InstagramIcon,  color: '#E1306C', charLimit: 2200,  tip: 'Punchy first line, heavy hashtags (up to 30), emojis encouraged.',    maxHashtags: 30,  aspectRatio: '1:1'    },
-  { id: 'x',         label: 'X (Twitter)',icon: XSocialIcon,    color: 'currentColor', charLimit: 280, tip: 'Short & punchy. Max 280 chars. 1-2 hashtags is ideal.',            maxHashtags: 2,   aspectRatio: '16:9'   },
-  { id: 'linkedin',  label: 'LinkedIn',   icon: LinkedinIcon,   color: '#0A66C2', charLimit: 3000,  tip: 'Professional tone. Thought leadership stories convert best.',          maxHashtags: 5,   aspectRatio: '1.91:1' },
+  { id: 'facebook', label: 'Facebook', icon: FacebookIcon, color: '#1877F2', charLimit: 63206, tip: 'Longer posts with storytelling work best. Use emojis & strong CTAs.', maxHashtags: 10, aspectRatio: '1.91:1' },
+  { id: 'instagram', label: 'Instagram', icon: InstagramIcon, color: '#E1306C', charLimit: 2200, tip: 'Punchy first line, heavy hashtags (up to 30), emojis encouraged.', maxHashtags: 30, aspectRatio: '1:1' },
+  { id: 'x (Twitter)', label: 'X (Twitter)', icon: XSocialIcon, color: 'currentColor', charLimit: 280, tip: 'Short & punchy. Max 280 chars. 1-2 hashtags is ideal.', maxHashtags: 2, aspectRatio: '16:9' },
+  { id: 'linkedin', label: 'LinkedIn', icon: LinkedinIcon, color: '#0A66C2', charLimit: 3000, tip: 'Professional tone. Thought leadership stories convert best.', maxHashtags: 5, aspectRatio: '1.91:1' },
 ];
 
 const BRAND_FONTS = [
-  { id: 'Inter',            label: 'Inter',            css: "'Inter', sans-serif" },
+  { id: 'Inter', label: 'Inter', css: "'Inter', sans-serif" },
   { id: 'Playfair Display', label: 'Playfair Display', css: "'Playfair Display', serif" },
-  { id: 'Roboto',           label: 'Roboto',           css: "'Roboto', sans-serif" },
-  { id: 'Montserrat',       label: 'Montserrat',       css: "'Montserrat', sans-serif" },
-  { id: 'Space Mono',       label: 'Space Mono',       css: "'Space Mono', monospace" },
+  { id: 'Roboto', label: 'Roboto', css: "'Roboto', sans-serif" },
+  { id: 'Montserrat', label: 'Montserrat', css: "'Montserrat', sans-serif" },
+  { id: 'Space Mono', label: 'Space Mono', css: "'Space Mono', monospace" },
 ];
 
 type PublishStatus = 'idle' | 'publishing' | 'success' | 'error';
@@ -110,7 +112,7 @@ export default function EditorPage() {
       const id = localStorage.getItem('ai_marketing_active_company_id');
       const str = localStorage.getItem('ai_marketing_companies');
       if (id && str) {
-        try { const c = JSON.parse(str) as { id: string; font?: string }[]; const a = c.find(x => x.id === id); if (a?.font) setBrandFont(a.font); } catch {}
+        try { const c = JSON.parse(str) as { id: string; font?: string }[]; const a = c.find(x => x.id === id); if (a?.font) setBrandFont(a.font); } catch { }
       }
     };
     load(); window.addEventListener('brand-updated', load); return () => window.removeEventListener('brand-updated', load);
@@ -193,7 +195,7 @@ export default function EditorPage() {
     };
     const onUp = () => { textDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeImageIdx, textLayersMap, editingTextId]);
 
   // ── Shape interactions ─────────────────────────────────────────────────────
@@ -216,7 +218,7 @@ export default function EditorPage() {
     };
     const onUp = () => { shapeDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeImageIdx, shapeLayersMap]);
 
   const startShapeResize = useCallback((layerId: string, handle: string, e: React.MouseEvent) => {
@@ -228,14 +230,14 @@ export default function EditorPage() {
     const layer = (shapeLayersMap[activeImageIdx] ?? []).find(l => l.id === layerId);
     if (!layer) return;
     shapeResizeRef.current = { id: layerId, handle, startX: e.clientX, startY: e.clientY, startW: layer.w, startH: layer.h, startXPos: layer.x, startYPos: layer.y };
-    
+
     const onMove = (ev: MouseEvent) => {
       if (!shapeResizeRef.current || !imageContainerRef.current) return;
       const { id, handle, startX, startY, startW, startH, startXPos, startYPos } = shapeResizeRef.current;
       const rect = imageContainerRef.current.getBoundingClientRect();
       const dx = ((ev.clientX - startX) / rect.width) * 100;
       const dy = ((ev.clientY - startY) / rect.height) * 100;
-      
+
       setShapeLayersMap(prev => ({
         ...prev,
         [activeImageIdx]: (prev[activeImageIdx] ?? []).map(l => {
@@ -262,7 +264,7 @@ export default function EditorPage() {
     };
     const onUp = () => { shapeResizeRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeImageIdx, shapeLayersMap]);
 
   // ── Load images & logo ─────────────────────────────────────────────────────
@@ -275,6 +277,14 @@ export default function EditorPage() {
         if (raw) { try { db = JSON.parse(raw); } catch { db = [raw]; } }
       }
       setImages(Array.isArray(db) ? db : []);
+      setActiveImageIdx(0);
+      setLogoScaleMap({});
+      setLogoPosMap({});
+      setLogoHiddenMap({});
+      setTextLayersMap({});
+      setShapeLayersMap({});
+      const ps = ['facebook', 'instagram', 'x', 'linkedin'];
+      setCaptions(Object.fromEntries(ps.map(p => [p, ''])));
     };
     load(); window.addEventListener('brand-updated', load); return () => window.removeEventListener('brand-updated', load);
   }, []);
@@ -314,7 +324,7 @@ export default function EditorPage() {
       const key = `creative_studio_selected_images_${id}`;
       const saved = await loadFromImageDB(key);
       if (Array.isArray(saved)) { const u = saved.filter((s: string) => s !== url); await saveToImageDB(key, u); sessionStorage.setItem(key, JSON.stringify(u)); }
-    } catch {}
+    } catch { }
   };
 
   const handleRemoveImage = (idx: number) => {
@@ -443,7 +453,7 @@ export default function EditorPage() {
   }, [logoPos, logoScale, logoAspectRatio]);
 
   // ── Compose canvas ─────────────────────────────────────────────────────────
-  const composeImageWithSettings = useCallback((base64: string, scale: number | null, pos: { x: number; y: number } | null, hideLogo: boolean, layers: TextLayer[]): Promise<string> => {
+  const composeImageWithSettings = useCallback((base64: string, scale: number | null, pos: { x: number; y: number } | null, hideLogo: boolean, layers: TextLayer[], shapeLayers: ShapeLayer[]): Promise<string> => {
     return new Promise(resolve => {
       const img = new Image(); img.src = base64;
       img.onload = () => {
@@ -451,6 +461,52 @@ export default function EditorPage() {
         canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d')!;
         ctx.drawImage(img, 0, 0);
+
+        // Draw Shapes
+        for (const shape of shapeLayers) {
+          ctx.save();
+          const sx = (shape.x / 100) * canvas.width;
+          const sy = (shape.y / 100) * canvas.height;
+          const sw = (shape.w / 100) * canvas.width;
+          const sh = (shape.h / 100) * canvas.height;
+
+          const cx = sx + sw / 2;
+          const cy = sy + sh / 2;
+
+          if (shape.rotation) {
+            ctx.translate(cx, cy);
+            ctx.rotate(shape.rotation * Math.PI / 180);
+            ctx.translate(-cx, -cy);
+          }
+
+          ctx.fillStyle = shape.color;
+          ctx.beginPath();
+          if (shape.type === 'rectangle' || shape.type === 'circle') {
+            let radius = (shape.borderRadius / 100) * (Math.min(sw, sh) / 2);
+            if (shape.type === 'circle') radius = Math.min(sw, sh) / 2;
+            if (ctx.roundRect) {
+              ctx.roundRect(sx, sy, sw, sh, radius);
+            } else {
+              ctx.rect(sx, sy, sw, sh);
+            }
+          } else if (shape.type === 'triangle') {
+            ctx.moveTo(sx + sw * 0.5, sy + sh * 0.134);
+            ctx.lineTo(sx, sy + sh);
+            ctx.lineTo(sx + sw, sy + sh);
+          } else if (shape.type === 'hex') {
+            ctx.moveTo(sx + sw * 0.5, sy);
+            ctx.lineTo(sx + sw * 0.933, sy + sh * 0.25);
+            ctx.lineTo(sx + sw * 0.933, sy + sh * 0.75);
+            ctx.lineTo(sx + sw * 0.5, sy + sh);
+            ctx.lineTo(sx + sw * 0.067, sy + sh * 0.75);
+            ctx.lineTo(sx + sw * 0.067, sy + sh * 0.25);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Draw Texts
         for (const layer of layers) {
           const sf = (layer.fontSize / 500) * canvas.width;
           ctx.save();
@@ -459,10 +515,36 @@ export default function EditorPage() {
           ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = sf * 0.3; ctx.shadowOffsetY = sf * 0.05;
           const tx = (layer.x / 100) * canvas.width; const ty = (layer.y / 100) * canvas.height;
           const maxW = canvas.width - tx - 20;
-          const words = layer.text.split(' '); let line = '', ly = ty;
-          for (const w of words) { const t = line ? `${line} ${w}` : w; if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line, tx, ly); line = w; ly += sf * 1.25; } else line = t; }
-          ctx.fillText(line, tx, ly); ctx.restore();
+
+          let maxLineWidth = 0;
+          const lines: string[] = [];
+          const words = layer.text.split(' '); let line = '';
+          for (const w of words) {
+            const t = line ? `${line} ${w}` : w;
+            const mw = ctx.measureText(t).width;
+            if (mw > maxW && line) {
+              lines.push(line);
+              maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
+              line = w;
+            } else line = t;
+          }
+          lines.push(line); maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
+
+          const totalHeight = lines.length * (sf * 1.25);
+          const cx = tx + maxLineWidth / 2;
+          const cy = ty + totalHeight / 2;
+
+          if (layer.rotation) {
+            ctx.translate(cx, cy);
+            ctx.rotate(layer.rotation * Math.PI / 180);
+            ctx.translate(-cx, -cy);
+          }
+
+          let ly = ty;
+          for (const l of lines) { ctx.fillText(l, tx, ly); ly += sf * 1.25; }
+          ctx.restore();
         }
+
         if (companyLogo && !hideLogo) {
           const logo = new Image(); logo.src = companyLogo;
           logo.onload = () => {
@@ -483,13 +565,13 @@ export default function EditorPage() {
   const handlePublishAll = async () => {
     setIsPublishingAll(true); setPublishDone(false);
     if (!images.length) { alert('No image available'); setIsPublishingAll(false); return; }
-    const composed = await Promise.all(images.map((img, idx) => composeImageWithSettings(img, logoScaleMap[idx] ?? null, logoPosMap[idx] ?? null, logoHiddenMap[idx] ?? false, textLayersMap[idx] ?? [])));
+    const composed = await Promise.all(images.map((img, idx) => composeImageWithSettings(img, logoScaleMap[idx] ?? null, logoPosMap[idx] ?? null, logoHiddenMap[idx] ?? false, textLayersMap[idx] ?? [], shapeLayersMap[idx] ?? [])));
     for (const p of platforms) {
       if (!enabledPlatforms[p.id]) continue;
       setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'publishing' } }));
       try {
         const res = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: p.id, images: composed, caption: captions[p.id] || '' }) });
-        if (!res.ok) { const t = await res.text(); let m = t.substring(0, 50); try { m = JSON.parse(t).error || m; } catch {} setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: `Error ${res.status}: ${m}` } })); continue; }
+        if (!res.ok) { const t = await res.text(); let m = t.substring(0, 50); try { m = JSON.parse(t).error || m; } catch { } setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: `Error ${res.status}: ${m}` } })); continue; }
         const d = await res.json();
         setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: d.success ? 'success' : 'error', message: d.success ? undefined : d.error || 'Failed' } }));
       } catch (e) { setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: e instanceof Error ? e.message : 'Network error' } })); }
@@ -553,7 +635,7 @@ export default function EditorPage() {
                   borderRadius: '14px', padding: '8px 6px',
                   boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
                 }}>
-                  <ToolBtn tool="select" icon={() => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 3l14 9-7 1-4 7z"/></svg>} label="Select" disabled={!activeImage} />
+                  <ToolBtn tool="select" icon={() => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 3l14 9-7 1-4 7z" /></svg>} label="Select" disabled={!activeImage} />
                   <ToolBtn tool="crop" icon={Crop} label="Crop" disabled={!activeImage} />
                   <ToolBtn tool="text" icon={Type} label="Add Text" onClick={addTextLayer} disabled={!activeImage} />
                   <ToolBtn tool="shape" icon={Square} label="Shapes" onClick={() => setActiveTool('shape')} disabled={!activeImage} />
@@ -593,7 +675,7 @@ export default function EditorPage() {
                   <div style={{ width: '28px', height: '1px', background: 'var(--glass-border)', margin: '2px auto' }} />
                   <ToolBtn icon={X} label="Clear all" danger disabled={!activeImage} onClick={async () => {
                     setImages([]); setActiveImageIdx(0); setLogoScaleMap({}); setLogoPosMap({}); setLogoHiddenMap({}); setTextLayersMap({});
-                    try { const id = localStorage.getItem('ai_marketing_active_company_id') || 'default'; const k = `creative_studio_selected_images_${id}`; await saveToImageDB(k, []); sessionStorage.setItem(k, '[]'); } catch {}
+                    try { const id = localStorage.getItem('ai_marketing_active_company_id') || 'default'; const k = `creative_studio_selected_images_${id}`; await saveToImageDB(k, []); sessionStorage.setItem(k, '[]'); } catch { }
                   }} />
                 </div>
               </motion.div>
@@ -610,9 +692,9 @@ export default function EditorPage() {
                   <div
                     ref={imageContainerRef}
                     style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: activeImage ? 'var(--bg-primary)' : 'var(--gradient-card)', overflow: 'hidden', cursor: isCropping ? 'crosshair' : activeTool === 'text' ? 'text' : 'default', borderRadius: 'inherit' }}
-                    onClick={() => { 
+                    onClick={() => {
                       if (!isCropping) {
-                        setSelectedTextId(null); 
+                        setSelectedTextId(null);
                         setSelectedShapeId(null);
                       }
                     }}
@@ -650,11 +732,11 @@ export default function EditorPage() {
                                   borderRadius: (layer.type === 'rectangle' || layer.type === 'circle') ? `${layer.borderRadius}%` : '0',
                                   clipPath: layer.type === 'triangle' ? 'polygon(50% 13.4%, 0% 100%, 100% 100%)' : layer.type === 'hex' ? 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)' : 'none'
                                 }} />
-                                
+
                                 {isSel && (layer.type === 'triangle' || layer.type === 'hex') && (
                                   <div style={{ position: 'absolute', inset: -2, border: '2px dashed rgba(124,58,237,0.8)', pointerEvents: 'none', zIndex: -1 }} />
                                 )}
-                                
+
                                 {isSel && (
                                   <>
                                     {(['nw', 'ne', 'sw', 'se'] as const).map(h => (
@@ -663,7 +745,7 @@ export default function EditorPage() {
                                   </>
                                 )}
                               </div>
-                              
+
                               {isSel && (
                                 <div onClick={e => { e.stopPropagation(); deleteShapeLayer(layer.id); }} style={{ position: 'absolute', top: '-12px', right: '-12px', width: '24px', height: '24px', borderRadius: '50%', background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.4)', zIndex: 20 }}>
                                   <X size={13} color="white" />
@@ -705,13 +787,13 @@ export default function EditorPage() {
                           <div ref={logoRef} style={{ position: 'absolute', left: logoPos ? `${logoPos.x}%` : undefined, right: logoPos ? undefined : '20px', top: logoPos ? `${logoPos.y}%` : '20px', width: logoScale ? `${logoScale}%` : '50px', zIndex: 10, border: '1px solid transparent' }}
                             onMouseEnter={e => { e.currentTarget.style.border = '1px dashed rgba(124,58,237,0.5)'; const btn = e.currentTarget.querySelector('.logo-del-btn'); if (btn) (btn as HTMLElement).style.opacity = '1'; }}
                             onMouseLeave={e => { e.currentTarget.style.border = '1px solid transparent'; const btn = e.currentTarget.querySelector('.logo-del-btn'); if (btn) (btn as HTMLElement).style.opacity = '0'; }}>
-                            
+
                             <div className="logo-del-btn" onClick={e => { e.stopPropagation(); setLogoHiddenMap(prev => ({ ...prev, [activeImageIdx]: true })); }} style={{ position: 'absolute', top: '-10px', right: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.4)', zIndex: 20, opacity: 0, transition: 'opacity 0.2s' }}>
                               <X size={11} color="white" />
                             </div>
 
                             <img src={companyLogo} alt="logo" onLoad={e => setLogoAspectRatio((e.target as HTMLImageElement).naturalWidth / (e.target as HTMLImageElement).naturalHeight)} onMouseDown={startLogoDrag} style={{ width: '100%', height: 'auto', display: 'block', cursor: 'grab', userSelect: 'none' }} draggable={false} />
-                            {(['nw','ne','sw','se'] as const).map(h => (
+                            {(['nw', 'ne', 'sw', 'se'] as const).map(h => (
                               <div key={h} onMouseDown={e => startLogoResize(h, e)} style={{ position: 'absolute', width: 10, height: 10, background: '#7c3aed', borderRadius: '50%', top: h.includes('n') ? -5 : undefined, bottom: h.includes('s') ? -5 : undefined, left: h.includes('w') ? -5 : undefined, right: h.includes('e') ? -5 : undefined, cursor: `${h}-resize`, zIndex: 11, boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
                             ))}
                           </div>
@@ -726,11 +808,11 @@ export default function EditorPage() {
                             <div onMouseDown={e => startCropDrag('move', e)} style={{ position: 'absolute', left: `${cropRect.x}%`, top: `${cropRect.y}%`, width: `${cropRect.w}%`, height: `${cropRect.h}%`, border: '2px solid #7c3aed', boxShadow: '0 0 0 1px rgba(124,58,237,0.3)', cursor: 'move', zIndex: 6 }}>
                               {[33, 66].map(p => <div key={`v${p}`} style={{ position: 'absolute', left: `${p}%`, top: 0, bottom: 0, width: '1px', background: 'rgba(255,255,255,0.15)' }} />)}
                               {[33, 66].map(p => <div key={`h${p}`} style={{ position: 'absolute', top: `${p}%`, left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.15)' }} />)}
-                              {(['nw','ne','sw','se'] as const).map(h => <div key={h} onMouseDown={e => startCropDrag(h, e)} style={{ position: 'absolute', width: 12, height: 12, background: '#7c3aed', borderRadius: '2px', top: h.includes('n') ? -6 : undefined, bottom: h.includes('s') ? -6 : undefined, left: h.includes('w') ? -6 : undefined, right: h.includes('e') ? -6 : undefined, cursor: `${h}-resize`, zIndex: 7 }} />)}
+                              {(['nw', 'ne', 'sw', 'se'] as const).map(h => <div key={h} onMouseDown={e => startCropDrag(h, e)} style={{ position: 'absolute', width: 12, height: 12, background: '#7c3aed', borderRadius: '2px', top: h.includes('n') ? -6 : undefined, bottom: h.includes('s') ? -6 : undefined, left: h.includes('w') ? -6 : undefined, right: h.includes('e') ? -6 : undefined, cursor: `${h}-resize`, zIndex: 7 }} />)}
                             </div>
                             {/* Crop controls floating inside canvas */}
                             <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '4px', zIndex: 8, background: 'rgba(0,0,0,0.65)', padding: '5px 6px', borderRadius: '10px', backdropFilter: 'blur(8px)' }}>
-                              {[['Free', null], ['1:1', 1], ['16:9', 16/9], ['1.91:1', 1.91]].map(([lbl, val]) => (
+                              {[['Free', null], ['1:1', 1], ['16:9', 16 / 9], ['1.91:1', 1.91]].map(([lbl, val]) => (
                                 <button key={String(lbl)} onClick={() => setActiveCropRatio(val as number | null)} style={{ padding: '4px 9px', fontSize: '10px', fontWeight: 700, borderRadius: '6px', border: 'none', cursor: 'pointer', background: activeCropRatio === val ? '#7c3aed' : 'rgba(255,255,255,0.1)', color: 'white' }}>{lbl as string}</button>
                               ))}
                             </div>
@@ -835,8 +917,8 @@ export default function EditorPage() {
                           <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
                           {/* Weight */}
                           <div style={{ display: 'flex', gap: '3px' }}>
-                            {([['400','N','Normal'],['700','B','Bold'],['900','Bl','Black']] as const).map(([w,lbl,title]) => (
-                              <button key={w} title={title} onClick={() => updateLayer(selectedLayer.id, { fontWeight: w as '400'|'700'|'900' })}
+                            {([['400', 'N', 'Normal'], ['700', 'B', 'Bold'], ['900', 'Bl', 'Black']] as const).map(([w, lbl, title]) => (
+                              <button key={w} title={title} onClick={() => updateLayer(selectedLayer.id, { fontWeight: w as '400' | '700' | '900' })}
                                 style={{ padding: '4px 8px', fontSize: '11px', fontWeight: w, borderRadius: '6px', border: selectedLayer.fontWeight === w ? '1.5px solid #7c3aed' : '1px solid var(--input-border)', background: selectedLayer.fontWeight === w ? 'rgba(124,58,237,0.15)' : 'var(--input-bg)', color: selectedLayer.fontWeight === w ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.12s' }}>
                                 {lbl}
                               </button>
@@ -884,7 +966,7 @@ export default function EditorPage() {
                         style={{ overflow: 'hidden', borderTop: '1px solid var(--glass-border)' }}
                       >
                         <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', background: 'rgba(124,58,237,0.04)' }}>
-                          
+
                           {!selectedShapeLayer ? (
                             <div style={{ display: 'flex', gap: '8px', width: '100%', justifyContent: 'center', flexWrap: 'wrap' }}>
                               <button onClick={() => addShapeLayer('rectangle')} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -921,6 +1003,21 @@ export default function EditorPage() {
                                   <input type="range" min="0" max="50" value={selectedShapeLayer.borderRadius} onChange={e => updateShapeLayer(selectedShapeLayer.id, { borderRadius: Number(e.target.value) })} style={{ flex: 1, cursor: 'pointer', maxWidth: '80px' }} />
                                 </div>
                               )}
+
+                              {/* Divider */}
+                              <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
+
+                              {/* Alignment controls */}
+                              <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginRight: '4px' }}>Align:</span>
+                                <button title="Align Left" onClick={() => updateShapeLayer(selectedShapeLayer.id, { x: 0 })} style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyStart size={14} /></button>
+                                <button title="Align Center X" onClick={() => updateShapeLayer(selectedShapeLayer.id, { x: 50 - selectedShapeLayer.w / 2 })} style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyCenter size={14} /></button>
+                                <button title="Align Right" onClick={() => updateShapeLayer(selectedShapeLayer.id, { x: 100 - selectedShapeLayer.w })} style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignHorizontalJustifyEnd size={14} /></button>
+                                <div style={{ width: '1px', height: '14px', background: 'var(--glass-border)', margin: '0 2px' }} />
+                                <button title="Align Top" onClick={() => updateShapeLayer(selectedShapeLayer.id, { y: 0 })} style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignVerticalJustifyStart size={14} /></button>
+                                <button title="Align Center Y" onClick={() => updateShapeLayer(selectedShapeLayer.id, { y: 50 - selectedShapeLayer.h / 2 })} style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignVerticalJustifyCenter size={14} /></button>
+                                <button title="Align Bottom" onClick={() => updateShapeLayer(selectedShapeLayer.id, { y: 100 - selectedShapeLayer.h })} style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlignVerticalJustifyEnd size={14} /></button>
+                              </div>
 
                               {/* Divider */}
                               <div style={{ width: '1px', height: '22px', background: 'var(--glass-border)' }} />
@@ -1065,7 +1162,7 @@ export default function EditorPage() {
 
                 {/* Publish */}
                 <motion.button id="publish-everywhere-btn" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '15px', fontWeight: 700, borderRadius: '14px' }} onClick={handlePublishAll} disabled={isPublishingAll} whileTap={{ scale: 0.98 }} whileHover={{ boxShadow: '0 8px 40px rgba(124,58,237,0.5)' }}>
-                  {isPublishingAll ? <><div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>{[0,1,2,3,4].map(i => <div key={i} className="wave-bar" style={{ animationDelay: `${i*0.1}s`, height: '14px' }} />)}</div>Publishing…</> : publishDone ? <><RefreshCw size={16} /> Publish Again</> : <><Send size={16} /> <Zap size={14} /> Publish Everywhere</>}
+                  {isPublishingAll ? <><div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>{[0, 1, 2, 3, 4].map(i => <div key={i} className="wave-bar" style={{ animationDelay: `${i * 0.1}s`, height: '14px' }} />)}</div>Publishing…</> : publishDone ? <><RefreshCw size={16} /> Publish Again</> : <><Send size={16} /> <Zap size={14} /> Publish Everywhere</>}
                 </motion.button>
 
                 {/* Publish status */}
@@ -1138,7 +1235,7 @@ export default function EditorPage() {
       <AnimatePresence>
         {showStudioPicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setShowStudioPicker(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <motion.div initial={{ opacity: 0, y: 24, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 24, scale: 0.95 }} transition={{ duration: 0.25, ease: [0.4,0,0.2,1] }} onClick={e => e.stopPropagation()} style={{ width: '720px', maxWidth: '95vw', maxHeight: '80vh', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
+            <motion.div initial={{ opacity: 0, y: 24, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 24, scale: 0.95 }} transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }} onClick={e => e.stopPropagation()} style={{ width: '720px', maxWidth: '95vw', maxHeight: '80vh', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}><Sparkles size={16} color="#7c3aed" /> Studio Gallery</div>

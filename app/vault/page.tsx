@@ -38,7 +38,7 @@ type SocialStatuses = Record<string, PlatformStatus>;
 
 const SOCIAL_PLATFORMS = [
   { id: 'facebook', label: 'Facebook', color: '#1877F2', icon: <FacebookIcon size={18} /> },
-  { id: 'x',        label: 'X (Twitter)', color: '#ffffff', icon: <XSocialIcon  size={18} /> },
+  { id: 'x',        label: 'X (Twitter)', color: 'currentColor', icon: <XSocialIcon  size={18} /> },
   { id: 'linkedin', label: 'LinkedIn',  color: '#0A66C2', icon: <LinkedinIcon  size={18} /> },
 ];
 
@@ -116,6 +116,8 @@ function VaultContent() {
 
   useEffect(() => {
     loadInitialData();
+    window.addEventListener('brand-updated', loadInitialData);
+    return () => window.removeEventListener('brand-updated', loadInitialData);
   }, [loadInitialData]);
 
   // ── Handle ?connected= or ?error= redirects from callbacks ────────────────
