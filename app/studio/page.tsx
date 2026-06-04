@@ -8,7 +8,7 @@ import Topbar from '@/components/Topbar';
 import {
   Upload, Wand2, Sparkles, Zap, RefreshCw,
   Check, RotateCcw, Image as ImageIcon, X,
-  Sliders, Loader2, AlertCircle, Trash2, Send
+  Sliders, Loader2, AlertCircle, Trash2, Send, Plus
 } from 'lucide-react';
 import { saveToImageDB, loadFromImageDB } from '@/lib/image-db';
 
@@ -25,7 +25,7 @@ interface StyleOption {
 const STYLES: StyleOption[] = [
   {
     id: 'glassmorphism',
-    name: 'Glassmorphism & Cyber-Premium',
+    name: 'Cyber Glass',
     description: 'Layered frosted glass panels over vibrant neon gradients. Futuristic & highly polished, perfect for tech or premium brands.',
     sampleImage: '/styles/glassmorphism.png',
     rules: `* Visual Elements: Layered, translucent frosted glass cards or panels. Ensure a visible background blur (bokeh) behind the glass elements. Include glowing UI elements, subtle glowing data lines, or abstract geometric shapes floating in the background.
@@ -35,7 +35,7 @@ const STYLES: StyleOption[] = [
   },
   {
     id: 'isometric',
-    name: '3D Isometric Ecosystem',
+    name: '3D Isometric',
     description: 'Fixed 45-degree top-down perspective diorama. Ideal for complex workflows, business solutions, and process maps.',
     sampleImage: '/styles/isometric.png',
     rules: `* Visual Elements: Render the scene strictly in a 3D isometric projection (orthographic camera, no converging perspective lines). Build the scene as a floating "island" or a diorama containing miniature buildings, devices, or abstract system blocks.
@@ -45,7 +45,7 @@ const STYLES: StyleOption[] = [
   },
   {
     id: 'chaos_maximalism',
-    name: 'Chaos Maximalism & Collage',
+    name: 'Chaos Collage',
     description: 'Loud, energetic mixed-media scrapbook style. Great for food & beverage, events, and bold promotions.',
     sampleImage: '/styles/chaos_maximalism.png',
     rules: `* Visual Elements: Combine mixed-media elements: halftone dot patterns, torn paper edges, masking tape strips, doodle overlays, and pop-art cutouts. Subjects should have thick, irregular white sticker borders around them.
@@ -55,7 +55,7 @@ const STYLES: StyleOption[] = [
   },
   {
     id: 'neo_minimalist',
-    name: 'Neo-Minimalist Editorial',
+    name: 'Neo Minimalist',
     description: 'High-end luxury magazine layout with vast empty spaces and stark shadows. Perfect for corporate and premium items.',
     sampleImage: '/styles/neo_minimalist.png',
     rules: `* Visual Elements: A single, isolated, high-definition subject (a product, an executive, or a stark geometric shape). Zero background clutter. No decorative icons, arrows, or flourishes.
@@ -65,13 +65,20 @@ const STYLES: StyleOption[] = [
   },
   {
     id: 'claymorphism',
-    name: 'Tactile Claymorphism',
+    name: 'Soft Clay',
     description: 'Approachable 3D pillowy clay aesthetic. Bouncy, friendly, and highly engaging for modern app marketing and B2C campaigns.',
     sampleImage: '/styles/claymorphism.png',
     rules: `* Visual Elements: All objects, characters, and UI elements must be 3D with extremely rounded corners. Zero sharp edges. Elements should look inflated, pillowy, and soft.
 * Color Palette: Bright pastel palettes (mint green, baby blue, soft peach, lilac) with low contrast between foreground and background colors.
 * Lighting & Texture: Smooth, non-reflective plasticine or clay textures. Dual-lighting: warm soft primary light from top left, cool rim light from bottom right to give bubbly volume.
 * Composition & Layout: Floating or bouncing elements in mid-air. Soft, blurry drop shadows beneath objects to establish depth against a solid pastel background.`
+  },
+  {
+    id: 'hologram_hud',
+    name: 'Holo Tech',
+    description: 'Glowing futuristic 3D data visualizations and neon UI elements overlaying a cinematic scene. Perfect for tech and B2B.',
+    sampleImage: '/styles/hologram_hud.png',
+    rules: `* Visual Elements: Integrate a glowing, high-tech holographic HUD interface. Include neon data graphics, charts, and icons floating in mid-air around the subject.\n* Color Palette: Tech-driven colors. Deep cinematic backgrounds with bright cyan, electric blue, and glowing orange UI elements.\n* Lighting & Texture: Cinematic lighting with sharp focus. Holograms should emit light onto the subject and environment. Use hyper-realistic photography for the base scene.\n* Composition & Layout: Frame the subject centrally, surrounded symmetrically or dynamically by floating holographic elements. Ensure a high contrast between the luminous UI and the darker background.`
   }
 ];
 
@@ -111,17 +118,66 @@ export default function StudioPage() {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
-  
+
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
   const [aiModels, setAiModels] = useState<AiModel[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
   const [animateHistoryEntrance, setAnimateHistoryEntrance] = useState(false);
   const [openAiSize, setOpenAiSize] = useState('auto');
   const [openAiQuality, setOpenAiQuality] = useState('auto');
+  // New states for reference images and generated styles
+  const [customStyleImage, setCustomStyleImage] = useState<string | null>(null);
+  const [customStyles, setCustomStyles] = useState<StyleOption[]>([]);
+  const [generatingStyleId, setGeneratingStyleId] = useState<string | null>(null);
+  const [errorGenerate, setErrorGenerate] = useState<string | null>(null);
+
+  // Handle reference image upload for custom style
+  const handleReferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        setCustomStyleImage(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Generate style from reference image
+  // Generate new custom style from reference image
+  const handleGenerateStyle = async () => {
+    if (!customStyleImage) {
+      setErrorGenerate('No reference image uploaded for the custom style.');
+      return;
+    }
+    setGeneratingStyleId('custom-new');
+    setErrorGenerate(null);
+    try {
+      const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+      const res = await fetch('/api/generate-style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: customStyleImage, companyId: activeId }),
+      });
+      if (!res.ok) throw new Error('Failed to generate style');
+      const newStyle: StyleOption = await res.json();
+      
+      setCustomStyles(prev => {
+        const updated = [...prev, newStyle];
+        saveToImageDB(`creative_studio_custom_styles_${activeId}`, updated).catch(e => console.warn('DB save custom styles failed', e));
+        return updated;
+      });
+      setCustomStyleImage(null); // Clear the image after successful generation
+    } catch (err) {
+      setErrorGenerate((err as Error).message);
+    } finally {
+      setGeneratingStyleId(null);
+    }
+  };
 
   const loadHistory = useCallback(async () => {
     const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-    
+
     // Check if we need to migrate existing localStorage data to IndexedDB
     let dbHistory = await loadFromImageDB(`creative_studio_history_${activeId}`);
     if (!dbHistory) {
@@ -139,7 +195,7 @@ export default function StudioPage() {
         dbHistory = [];
       }
     }
-    
+
     // Sanitize and deduplicate history items to ensure unique IDs and valid object format
     const sanitizedHistory: GeneratedImage[] = [];
     const seenIds = new Set<string>();
@@ -173,12 +229,20 @@ export default function StudioPage() {
         }
       });
     }
-    
+
     setGeneratedImages(sanitizedHistory);
 
     // Save sanitized history back to DB if it has been updated
     if (dbHistory && dbHistory.length !== sanitizedHistory.length) {
       saveToImageDB(`creative_studio_history_${activeId}`, sanitizedHistory).catch(e => console.warn(e));
+    }
+
+    // Load custom styles
+    const dbStyles = await loadFromImageDB(`creative_studio_custom_styles_${activeId}`);
+    if (Array.isArray(dbStyles)) {
+      setCustomStyles(dbStyles);
+    } else {
+      setCustomStyles([]);
     }
   }, []);
 
@@ -208,7 +272,7 @@ export default function StudioPage() {
         const { providers, models } = data;
         setAvailableProviders(providers || []);
         setAiModels(models || []);
-        
+
         if (providers && providers.length > 0) {
           setSelectedProvider(providers[0]);
           const firstModel = models?.find((m: { provider: string; id: string }) => m.provider === providers[0]);
@@ -308,7 +372,7 @@ export default function StudioPage() {
       if (data.images && data.images.length > 0) {
         // Pad the array to match numVariations for UI purposes
         const rawImages = Array.from({ length: numVariations }).map((_, i) => data.images[i % data.images.length]);
-        
+
         // Convert to history objects
         const timestamp = Date.now();
         const newHistoryItems: GeneratedImage[] = rawImages.map((url: string, index: number) => ({
@@ -320,19 +384,19 @@ export default function StudioPage() {
 
         const updatedHistory = [...newHistoryItems, ...generatedImages].slice(0, 30); // 30 items max in history
         setGeneratedImages(updatedHistory);
-        
+
         try {
           const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
           saveToImageDB(`creative_studio_history_${currentCompanyId}`, updatedHistory).catch(e => console.warn('DB save failed', e));
         } catch (e) {
           console.warn('Failed to save to image DB', e);
         }
-        
+
         setTimeout(() => {
           galleryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
       }
-      
+
       setState('done');
       setAnimateHistoryEntrance(true);
       setTimeout(() => {
@@ -360,10 +424,11 @@ export default function StudioPage() {
   return (
     <div className="app-layout">
       <Sidebar />
-      <div className="main-content">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar title="Creative Studio" subtitle="AI-powered image generation & variation" />
-        <div className="page-content" style={{ paddingBottom: '160px', position: 'relative' }}>
-          
+        <div className="main-content">
+          <div className="page-content" style={{ paddingBottom: '160px', position: 'relative' }}>
+
           {/* Floating Error Message */}
           <AnimatePresence>
             {errorMsg && (
@@ -389,106 +454,365 @@ export default function StudioPage() {
             )}
           </AnimatePresence>
 
-          {/* Main Gallery Area — Takes full width now */}
-          <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
-            
+          {/* Main Layout Area */}
+          <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '32px', alignItems: 'flex-start', paddingBottom: '160px' }}>
+            {/* Left Column */}
+            <div style={{ flex: 1, minWidth: 0, position: 'relative', paddingRight: '280px' }}>
+
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                {state === 'idle' && generatedImages.length === 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '480px', textAlign: 'center' }}>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                      style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(124,58,237,0.3), rgba(6,182,212,0.3), rgba(124,58,237,0.3))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}
+                    >
+                      <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Sparkles size={28} color="#7c3aed" />
+                      </div>
+                    </motion.div>
+                    <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Ready to Create</h2>
+                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '340px', lineHeight: 1.6 }}>
+                      Upload a reference design, craft your prompt, and let AI generate stunning variations tailored to your campaign.
+                    </p>
+                  </div>
+                )}
+
+                {(generatedImages.length > 0 || state !== 'idle') && (
+                  <div ref={galleryRef} style={{ scrollMarginTop: '100px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                      <div>
+                        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          Creative History
+                          {state === 'done' && (
+                            <span className="badge badge-green" style={{ marginLeft: '10px', fontSize: '10px', verticalAlign: 'middle' }}>
+                              <Check size={9} /> Generated
+                            </span>
+                          )}
+                        </h2>
+                      </div>
+                      {state === 'generating' ? (
+                        <span className="badge badge-amber"><Zap size={10} /> Processing...</span>
+                      ) : generatedImages.length > 0 ? (
+                        <button className="btn-ghost" onClick={() => {
+                          setGeneratedImages([]);
+                          const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                          saveToImageDB(`creative_studio_history_${currentCompanyId}`, []).catch(e => console.warn(e));
+                        }} style={{ fontSize: '12px', padding: '8px 14px' }}>
+                          <RotateCcw size={12} /> Clear All
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <div className="masonry-grid">
+                      {state === 'generating' && Array.from({ length: numVariations }).map((_, i) => (
+                        <div key={`skel-${i}`} className="masonry-item">
+                          <div className="skeleton" style={{ borderRadius: '16px', height: `${220 + (i % 3) * 60}px` }} />
+                        </div>
+                      ))}
+
+                      {generatedImages.map((img, i) => {
+                        // An image is "selected" if its ID is in selectedVariations,
+                        // OR its URL was part of the previously persisted selection from the Editor.
+                        const isSelectedById = selectedVariations.includes(img.id);
+                        const isSelectedByUrl = persistedSelectedUrls.includes(img.url);
+                        const isSelected = isSelectedById || isSelectedByUrl;
+                        return (
+                          <motion.div
+                            key={img.id}
+                            className="masonry-item"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i < numVariations && animateHistoryEntrance ? i * 0.1 : 0, duration: 0.4 }}
+                          >
+                            <div
+                              id={`variation-${img.id}`}
+                              onClick={() => {
+                                if (isSelectedByUrl && !isSelectedById) {
+                                  // Image was persisted-selected by URL; clicking deselects it from persisted set
+                                  setPersistedSelectedUrls(prev => prev.filter(u => u !== img.url));
+                                  return;
+                                }
+                                setSelectedVariations(prev => {
+                                  if (prev.includes(img.id)) {
+                                    return prev.filter(id => id !== img.id);
+                                  }
+                                  const totalSelected = prev.length + persistedSelectedUrls.filter(u =>
+                                    !generatedImages.some(gi => gi.id === img.id && gi.url === u)
+                                  ).length;
+                                  if (totalSelected >= 5) return prev;
+                                  return [...prev, img.id];
+                                });
+                              }}
+                              style={{
+                                position: 'relative', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
+                                border: isSelected ? '2px solid #7c3aed' : '2px solid rgba(124,58,237,0.15)',
+                                transition: 'all 0.3s',
+                                boxShadow: isSelected ? '0 0 0 4px rgba(124,58,237,0.2)' : 'none',
+                                height: 'auto',
+                                background: 'rgba(124,58,237,0.05)',
+                              }}
+                            >
+                              <img src={img.url} alt={`Generated item`} style={{ width: '100%', height: 'auto', display: 'block' }} />
+                              <div style={{ position: 'absolute', inset: 0, background: 'rgba(124,58,237,0.2)', opacity: isSelected ? 1 : 0, transition: '0.3s', pointerEvents: 'none' }} />
+
+                              <button
+                                onClick={(e) => handleDelete(img.id, e)}
+                                className="hover-action-btn"
+                                style={{ position: 'absolute', top: '10px', right: '10px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+                                title="Delete"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+
+                              {img.prompt && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPrompt(img.prompt!);
+                                  }}
+                                  className="hover-action-btn"
+                                  style={{ position: 'absolute', top: '10px', right: '46px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+                                  title="Reuse this prompt"
+                                >
+                                  <RotateCcw size={13} />
+                                </button>
+                              )}
+
+                              {isSelected && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  style={{
+                                    position: 'absolute', top: '10px', left: '10px',
+                                    width: '28px', height: '28px', borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  }}
+                                >
+                                  <Check size={14} color="white" />
+                                </motion.div>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+
+                    <AnimatePresence>
+                      {(() => {
+                        // Merge ID-based and URL-based selections for total count
+                        const idSelectedUrls = selectedVariations
+                          .map(id => generatedImages.find(img => img.id === id)?.url)
+                          .filter(Boolean) as string[];
+                        const mergedUrls = Array.from(new Set([...persistedSelectedUrls, ...idSelectedUrls]));
+                        const totalCount = activeTooltip ? 0 : mergedUrls.length;
+                        return totalCount > 0 ? (
+                          <motion.div
+                            drag
+                            dragMomentum={false}
+                            initial={{ opacity: 0, y: 20, x: 0 }}
+                            animate={{ opacity: 1, y: 0, x: 0 }}
+                            exit={{ opacity: 0, y: 20, x: 0 }}
+                            style={{ position: 'fixed', bottom: '190px', right: '310px', zIndex: 100, cursor: 'grab' }}
+                            whileDrag={{ cursor: 'grabbing', scale: 1.02, zIndex: 200 }}
+                          >
+                            <div className="glass-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(20px)' }}>
+                              <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <ImageIcon size={16} color="#7c3aed" />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{mergedUrls.length} image{mergedUrls.length > 1 ? 's' : ''} selected</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{mergedUrls.length > 1 ? 'Carousel post' : 'Ready to post'}</div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                                <button
+                                  className="btn-ghost"
+                                  onClick={() => {
+                                    setSelectedVariations([]);
+                                    setPersistedSelectedUrls([]);
+                                  }}
+                                  style={{ padding: '10px 14px', fontSize: '13px' }}
+                                >
+                                  <X size={14} /> Clear
+                                </button>
+                                <button
+                                  className="btn-primary"
+                                  onClick={async () => {
+                                    if (mergedUrls.length > 0) {
+                                      try {
+                                        const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                                        await saveToImageDB(`creative_studio_selected_images_${currentCompanyId}`, mergedUrls);
+                                        sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(mergedUrls));
+                                      } catch (e) {
+                                        console.warn('Failed to save selected images to DB, falling back to sessionStorage', e);
+                                        try {
+                                          const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+                                          sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(mergedUrls));
+                                        } catch { }
+                                      }
+                                    }
+                                    router.push('/editor');
+                                  }}
+                                  style={{ padding: '10px 18px', fontSize: '13px' }}
+                                >
+                                  Edit & Post <Send size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ) : null;
+                      })()}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+
+          </div> {/* End Left Column */}
+          {/* Right Column: Art Style Studio */}
+          <div style={{ width: '280px', flexShrink: 0, position: 'fixed', right: 0, top: '70px', bottom: '100px', overflowY: 'auto', padding: '0 16px', background: 'var(--bg-primary)', borderLeft: '1px solid var(--glass-border)', zIndex: 50 }} className="custom-scrollbar">
             {/* Art Style Studio Section */}
-            <div style={{ marginBottom: '40px' }}>
+            <div style={{ marginBottom: '0' }}>
               <div style={{ marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Outfit', sans-serif" }}>
                   <Sparkles size={18} color="#7c3aed" /> Art Style Studio
                 </h2>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Select a premium, high-converting visual style to instantly inject optimized AI rendering rules into your poster.
+                  Select a premium style to apply optimized AI rendering rules.
                 </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
-                {STYLES.map(style => {
+              {/* Art Style Gallery */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                
+                {/* ── Add Custom Style Card ── */}
+                <div
+                  style={{
+                    position: 'relative',
+                    aspectRatio: '1/1',
+                    borderRadius: '16px',
+                    border: '1px dashed rgba(167, 139, 250, 0.4)',
+                    background: 'rgba(124,58,237,0.05)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', overflow: 'hidden', transition: 'all 0.2s'
+                  }}
+                  onClick={() => document.getElementById('custom-style-input')?.click()}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.1)'; e.currentTarget.style.borderColor = 'rgba(167, 139, 250, 0.8)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.05)'; e.currentTarget.style.borderColor = 'rgba(167, 139, 250, 0.4)'; }}
+                >
+                  <input type="file" id="custom-style-input" accept="image/*" style={{ display: 'none' }} onChange={handleReferenceChange} />
+                  
+                  {customStyleImage ? (
+                    <>
+                      <img src={customStyleImage} alt="Custom Ref" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0, opacity: 0.5 }} />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setCustomStyleImage(null); }}
+                        style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 20, width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                        title="Remove image"
+                      >
+                        <X size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleGenerateStyle(); }}
+                        disabled={generatingStyleId === 'custom-new'}
+                        style={{ position: 'relative', zIndex: 10, background: 'var(--gradient-brand)', border: 'none', color: '#fff', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}
+                      >
+                        {generatingStyleId === 'custom-new' ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />} 
+                        {generatingStyleId === 'custom-new' ? 'Analyzing...' : 'Generate'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                        <Plus size={20} color="#a78bfa" />
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#a78bfa' }}>New Style</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', padding: '0 12px', marginTop: '4px' }}>Upload ref image</span>
+                    </>
+                  )}
+                </div>
+
+                {/* ── Existing Styles Map ── */}
+                {(STYLES.concat(customStyles)).map(style => {
                   const isSelected = selectedStyle === style.id;
                   return (
                     <div
                       key={style.id}
                       onClick={() => setSelectedStyle(style.id)}
                       style={{
-                        background: isSelected ? 'rgba(124, 58, 237, 0.08)' : 'var(--input-bg)',
-                        border: isSelected ? '2px solid #7c3aed' : '1px solid var(--input-border)',
-                        borderRadius: '16px',
-                        padding: '12px',
-                        cursor: 'pointer',
                         position: 'relative',
+                        aspectRatio: '1/1',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '12px',
-                        boxShadow: isSelected ? '0 10px 25px -5px rgba(124, 58, 237, 0.25)' : 'none',
+                        border: isSelected ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.08)',
+                        boxShadow: isSelected ? '0 8px 24px -4px rgba(124, 58, 237, 0.4), inset 0 0 0 1px rgba(255,255,255,0.1)' : '0 4px 12px rgba(0,0,0,0.1)',
                         transform: isSelected ? 'translateY(-2px)' : 'none',
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.border = '1px solid rgba(124, 58, 237, 0.4)';
-                          e.currentTarget.style.background = 'var(--input-bg)';
+                          e.currentTarget.style.border = '1px solid rgba(167, 139, 250, 0.4)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.border = '1px solid var(--input-border)';
-                          e.currentTarget.style.background = 'var(--input-bg)';
+                          e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)';
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
                         }
                       }}
                     >
-                      {/* Preview Thumbnail */}
-                      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '10px', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-                        <img
-                          src={style.sampleImage}
-                          alt={style.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s', transform: isSelected ? 'scale(1.05)' : 'scale(1)' }}
-                        />
-                        {isSelected && (
-                          <div style={{ position: 'absolute', top: '8px', right: '8px', width: '22px', height: '22px', borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.4)', zIndex: 2 }}>
-                            <Check size={12} color="white" strokeWidth={3} />
-                          </div>
-                        )}
-                        
-                        {/* Rules Info Trigger (Tooltip style) */}
-                        <div 
-                          title="View strict AI rules"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveTooltip(activeTooltip === style.id ? null : style.id);
-                          }}
-                          style={{
-                            position: 'absolute',
-                            bottom: '8px',
-                            right: '8px',
-                            width: '22px',
-                            height: '22px',
-                            borderRadius: '50%',
-                            background: 'var(--input-bg)',
-                            border: '1px solid var(--glass-border)',
-                            backdropFilter: 'blur(4px)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            zIndex: 3,
-                            color: 'var(--text-muted)',
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--input-bg)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--input-bg)'; }}
-                        >
-                          <Sliders size={11} />
-                        </div>
+                      <img
+                        src={style.sampleImage}
+                        alt={style.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)', transform: isSelected ? 'scale(1.08)' : 'scale(1)' }}
+                      />
+
+                      {/* Gradient Overlay for Text Readability */}
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        background: isSelected ? 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(124,58,237,0.4) 60%, rgba(0,0,0,0) 100%)' : 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.05) 100%)',
+                        transition: 'background 0.3s'
+                      }} />
+
+                      {/* Title */}
+                      <div style={{ position: 'absolute', bottom: '14px', left: '12px', right: '12px', zIndex: 10 }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', textShadow: '0 2px 6px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.8)', letterSpacing: '0.3px', lineHeight: 1.2 }}>{style.name}</h3>
                       </div>
 
-                      {/* Style Info */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: isSelected ? '#a78bfa' : 'var(--text-primary)', transition: 'color 0.2s' }}>{style.name}</h3>
-                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{style.description}</p>
+                      {/* Selection Checkmark */}
+                      {isSelected && (
+                        <div style={{ position: 'absolute', top: '10px', right: '10px', width: '22px', height: '22px', borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.4)', zIndex: 20 }}>
+                          <Check size={12} color="white" strokeWidth={3} />
+                        </div>
+                      )}
+
+                      {/* Rules Modal Trigger */}
+                      <div
+                        title="View strict AI rules"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTooltip(activeTooltip === style.id ? null : style.id);
+                        }}
+                        style={{
+                          position: 'absolute', top: '10px', left: '10px', width: '24px', height: '24px', borderRadius: '50%',
+                          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer', zIndex: 20, color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,58,237,0.8)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#a78bfa'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.5)'; e.currentTarget.style.color = 'rgba(255,255,255,0.9)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                      >
+                        <Sliders size={12} />
                       </div>
-                      
-                      {/* Rules modal is rendered at the top level below */}
                     </div>
                   );
                 })}
@@ -524,7 +848,7 @@ export default function StudioPage() {
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       onClick={e => e.stopPropagation()}
                       style={{
-                        width: '100%', maxWidth: '560px',
+                        width: '100%', maxWidth: '800px',
                         background: 'var(--bg-card)',
                         border: '1px solid var(--glass-border)',
                         backdropFilter: 'blur(24px)',
@@ -565,12 +889,21 @@ export default function StudioPage() {
                       </div>
 
                       {/* Modal Body */}
-                      <div style={{ padding: '20px 24px 24px', maxHeight: '60vh', overflowY: 'auto' }}>
-                        <div style={{
-                          fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.75',
-                          whiteSpace: 'pre-wrap', fontFamily: "'Inter', sans-serif",
-                        }}>
-                          {activeStyle.rules}
+                      <div style={{ padding: '24px', display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+                        {/* Left Side: 1:1 Image */}
+                        <div style={{ width: '320px', flexShrink: 0, aspectRatio: '1/1', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--glass-border)', background: 'var(--bg-primary)' }}>
+                          <img src={activeStyle.sampleImage} alt={activeStyle.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+
+                        {/* Right Side: Rules */}
+                        <div className="custom-scrollbar" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '320px', overflowY: 'auto', paddingRight: '12px' }}>
+                          <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500, lineHeight: '1.5', flexShrink: 0 }}>{activeStyle.description}</div>
+                          <div style={{
+                            fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.75',
+                            whiteSpace: 'pre-wrap', fontFamily: "'Inter', sans-serif",
+                          }}>
+                            {activeStyle.rules}
+                          </div>
                         </div>
                       </div>
 
@@ -594,218 +927,7 @@ export default function StudioPage() {
                 );
               })()}
             </AnimatePresence>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {state === 'idle' && generatedImages.length === 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '480px', textAlign: 'center' }}>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                    style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(124,58,237,0.3), rgba(6,182,212,0.3), rgba(124,58,237,0.3))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}
-                  >
-                    <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Sparkles size={28} color="#7c3aed" />
-                    </div>
-                  </motion.div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Ready to Create</h2>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '340px', lineHeight: 1.6 }}>
-                    Upload a reference design, craft your prompt, and let AI generate stunning variations tailored to your campaign.
-                  </p>
-                </div>
-              )}
-
-              {(generatedImages.length > 0 || state !== 'idle') && (
-                <div ref={galleryRef} style={{ scrollMarginTop: '100px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div>
-                      <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        Creative History
-                        {state === 'done' && (
-                          <span className="badge badge-green" style={{ marginLeft: '10px', fontSize: '10px', verticalAlign: 'middle' }}>
-                            <Check size={9} /> Generated
-                          </span>
-                        )}
-                      </h2>
-                    </div>
-                    {state === 'generating' ? (
-                      <span className="badge badge-amber"><Zap size={10} /> Processing...</span>
-                    ) : generatedImages.length > 0 ? (
-                      <button className="btn-ghost" onClick={() => {
-                          setGeneratedImages([]);
-                          const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-                          saveToImageDB(`creative_studio_history_${currentCompanyId}`, []).catch(e => console.warn(e));
-                        }} style={{ fontSize: '12px', padding: '8px 14px' }}>
-                        <RotateCcw size={12} /> Clear All
-                      </button>
-                    ) : null}
-                  </div>
-
-                  <div className="masonry-grid">
-                    {state === 'generating' && Array.from({ length: numVariations }).map((_, i) => (
-                      <div key={`skel-${i}`} className="masonry-item">
-                        <div className="skeleton" style={{ borderRadius: '16px', height: `${220 + (i % 3) * 60}px` }} />
-                      </div>
-                    ))}
-
-                    {generatedImages.map((img, i) => {
-                      // An image is "selected" if its ID is in selectedVariations,
-                      // OR its URL was part of the previously persisted selection from the Editor.
-                      const isSelectedById = selectedVariations.includes(img.id);
-                      const isSelectedByUrl = persistedSelectedUrls.includes(img.url);
-                      const isSelected = isSelectedById || isSelectedByUrl;
-                      return (
-                      <motion.div
-                        key={img.id}
-                        className="masonry-item"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i < numVariations && animateHistoryEntrance ? i * 0.1 : 0, duration: 0.4 }}
-                      >
-                        <div
-                          id={`variation-${img.id}`}
-                          onClick={() => {
-                            if (isSelectedByUrl && !isSelectedById) {
-                              // Image was persisted-selected by URL; clicking deselects it from persisted set
-                              setPersistedSelectedUrls(prev => prev.filter(u => u !== img.url));
-                              return;
-                            }
-                            setSelectedVariations(prev => {
-                              if (prev.includes(img.id)) {
-                                return prev.filter(id => id !== img.id);
-                              }
-                              const totalSelected = prev.length + persistedSelectedUrls.filter(u =>
-                                !generatedImages.some(gi => gi.id === img.id && gi.url === u)
-                              ).length;
-                              if (totalSelected >= 5) return prev;
-                              return [...prev, img.id];
-                            });
-                          }}
-                          style={{
-                            position: 'relative', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
-                            border: isSelected ? '2px solid #7c3aed' : '2px solid rgba(124,58,237,0.15)',
-                            transition: 'all 0.3s',
-                            boxShadow: isSelected ? '0 0 0 4px rgba(124,58,237,0.2)' : 'none',
-                            height: 'auto',
-                            background: 'rgba(124,58,237,0.05)',
-                          }}
-                        >
-                          <img src={img.url} alt={`Generated item`} style={{ width: '100%', height: 'auto', display: 'block' }} />
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(124,58,237,0.2)', opacity: isSelected ? 1 : 0, transition: '0.3s', pointerEvents: 'none' }} />
-                          
-                          <button 
-                            onClick={(e) => handleDelete(img.id, e)}
-                            className="hover-action-btn"
-                            style={{ position: 'absolute', top: '10px', right: '10px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
-                            title="Delete"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-
-                          {img.prompt && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPrompt(img.prompt!);
-                              }}
-                              className="hover-action-btn"
-                              style={{ position: 'absolute', top: '10px', right: '46px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
-                              title="Reuse this prompt"
-                            >
-                              <RotateCcw size={13} />
-                            </button>
-                          )}
-
-                          {isSelected && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              style={{
-                                position: 'absolute', top: '10px', left: '10px',
-                                width: '28px', height: '28px', borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}
-                            >
-                              <Check size={14} color="white" />
-                            </motion.div>
-                          )}
-                        </div>
-                      </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  <AnimatePresence>
-                    {(() => {
-                      // Merge ID-based and URL-based selections for total count
-                      const idSelectedUrls = selectedVariations
-                        .map(id => generatedImages.find(img => img.id === id)?.url)
-                        .filter(Boolean) as string[];
-                      const mergedUrls = Array.from(new Set([...persistedSelectedUrls, ...idSelectedUrls]));
-                      const totalCount = mergedUrls.length;
-                      return totalCount > 0 ? (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 20 }}
-                          style={{ position: 'fixed', bottom: '210px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}
-                        >
-                          <div className="glass-card" style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(20px)' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <ImageIcon size={16} color="#7c3aed" />
-                            </div>
-                            <div>
-                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{totalCount} image{totalCount > 1 ? 's' : ''} selected</div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{totalCount > 1 ? 'Will be published as a carousel post' : 'Ready to generate captions & publish'}</div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                className="btn-ghost"
-                                onClick={() => {
-                                  setSelectedVariations([]);
-                                  setPersistedSelectedUrls([]);
-                                }}
-                                style={{ padding: '10px 14px', fontSize: '13px' }}
-                              >
-                                <X size={14} /> Clear
-                              </button>
-                              <button
-                                className="btn-primary"
-                                onClick={async () => {
-                                  if (mergedUrls.length > 0) {
-                                    try {
-                                      const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-                                      await saveToImageDB(`creative_studio_selected_images_${currentCompanyId}`, mergedUrls);
-                                      sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(mergedUrls));
-                                    } catch (e) {
-                                      console.warn('Failed to save selected images to DB, falling back to sessionStorage', e);
-                                      try {
-                                        const currentCompanyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-                                        sessionStorage.setItem(`creative_studio_selected_images_${currentCompanyId}`, JSON.stringify(mergedUrls));
-                                      } catch {}
-                                    }
-                                  }
-                                  router.push('/editor');
-                                }}
-                                style={{ padding: '14px 24px', fontSize: '14px' }}
-                              >
-                                Generate Captions <Send size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ) : null;
-                    })()}
-                  </AnimatePresence>
-                </div>
-              )}
-            </motion.div>
-          </div>
-
+          </div> {/* End Right Column */}
           {/* BOTTOM DOCK */}
           <div style={{
             position: 'fixed',
@@ -857,7 +979,7 @@ export default function StudioPage() {
               {/* ── 2. Prompt ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', lineHeight: 1 }}>Prompt</span>
+
                   {/* Style chips inline */}
                   <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
                     {STYLES.map(s => (
@@ -949,11 +1071,11 @@ export default function StudioPage() {
                     <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="input-field"
                       style={{ flex: 1, padding: '0 10px', fontSize: '12px', borderRadius: '9px', minHeight: 0, cursor: 'pointer' }}>
                       {[
-                        { val: '1:1',  label: '1:1 — Square' },
+                        { val: '1:1', label: '1:1 — Square' },
                         { val: '9:16', label: '9:16 — Stories / Reels' },
                         { val: '16:9', label: '16:9 — Landscape' },
-                        { val: '4:5',  label: '4:5 — IG Portrait' },
-                        { val: '3:4',  label: '3:4 — Portrait' },
+                        { val: '4:5', label: '4:5 — IG Portrait' },
+                        { val: '3:4', label: '3:4 — Portrait' },
                       ].map(r => <option key={r.val} value={r.val} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{r.label}</option>)}
                     </select>
                   )}
@@ -977,11 +1099,11 @@ export default function StudioPage() {
                   {state === 'generating' ? (
                     <>
                       <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-                        {[0,1,2,3].map(i => <div key={i} className="wave-bar" style={{ animationDelay: `${i*0.1}s`, height: '10px', width: '3px' }} />)}
+                        {[0, 1, 2, 3].map(i => <div key={i} className="wave-bar" style={{ animationDelay: `${i * 0.1}s`, height: '10px', width: '3px' }} />)}
                       </div>
                       <span style={{ fontSize: '12px' }}>{Math.round(Math.min(progress, 100))}%</span>
                       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(0,0,0,0.25)' }}>
-                        <motion.div style={{ height: '100%', background: 'rgba(255,255,255,0.85)' }} animate={{ width: `${Math.min(progress,100)}%` }} transition={{ duration: 0.3 }} />
+                        <motion.div style={{ height: '100%', background: 'rgba(255,255,255,0.85)' }} animate={{ width: `${Math.min(progress, 100)}%` }} transition={{ duration: 0.3 }} />
                       </div>
                     </>
                   ) : state === 'done' ? (
@@ -995,6 +1117,7 @@ export default function StudioPage() {
             </div>
           </div>
 
+          </div>
         </div>
       </div>
     </div>
