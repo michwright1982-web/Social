@@ -611,6 +611,32 @@ function VaultContent() {
                                 onChange={e => setCredsForm(prev => ({ ...prev, clientSecret: e.target.value }))}
                                 style={{ fontSize: '13px', fontFamily: 'monospace' }} 
                               />
+                              
+                              {platform.id !== 'facebook' && (
+                                <div style={{ marginTop: '4px', padding: '10px 12px', background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '8px' }}>
+                                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Authorized Redirect URI:</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: 1.4 }}>
+                                    Copy and paste this exact URL into your {platform.label} Developer Console.
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', borderRadius: '6px', padding: '6px 10px', border: '1px solid var(--input-border)' }}>
+                                    <code style={{ flex: 1, fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {typeof window !== 'undefined' ? `${window.location.origin}/api/auth/${platform.id}/callback` : ''}
+                                    </code>
+                                    <button 
+                                      onClick={() => {
+                                        const uri = `${window.location.origin}/api/auth/${platform.id}/callback`;
+                                        navigator.clipboard.writeText(uri);
+                                        setCopiedId(`uri-${platform.id}`);
+                                        setTimeout(() => setCopiedId(null), 2000);
+                                      }} 
+                                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
+                                      title="Copy Redirect URI"
+                                    >
+                                      {copiedId === `uri-${platform.id}` ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button className="btn-primary" style={{ flex: 1, padding: '8px', fontSize: '12px', justifyContent: 'center' }} onClick={handleSaveCreds} disabled={savingCreds}>
                                   {savingCreds ? <Loader2 size={12} className="spin-slow" /> : <Lock size={12} />} Save Credentials
