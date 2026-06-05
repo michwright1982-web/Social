@@ -178,7 +178,7 @@ function VaultContent() {
         if (connected) {
           const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
           showToast(`✓ ${label} connected successfully!`, 'success');
-          setTimeout(() => loadInitialData(), 500);
+          setTimeout(() => loadInitialData(), 1500);
         }
         if (error) {
           const messages: Record<string, string> = {
@@ -217,7 +217,7 @@ function VaultContent() {
       const pollTimer = setInterval(() => {
         if (popup.closed) {
           clearInterval(pollTimer);
-          setTimeout(() => loadInitialData(), 500); // Refresh the connection status on the parent window
+          setTimeout(() => loadInitialData(), 1500); // Refresh the connection status on the parent window
         }
       }, 500);
     }
