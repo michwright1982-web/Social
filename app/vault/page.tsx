@@ -128,6 +128,17 @@ function VaultContent() {
     const connected = searchParams.get('connected');
     const error     = searchParams.get('error');
 
+    if (connected || error) {
+      if (typeof window !== 'undefined' && window.opener && window.opener !== window) {
+        // We are inside a popup window! Notify parent and close.
+        window.opener.postMessage({ type: 'oauth_complete', connected, error }, '*');
+        window.close();
+        // Fallback close just in case
+        setTimeout(() => window.close(), 100);
+        return;
+      }
+    }
+
     if (connected) {
       setTimeout(() => {
         const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
@@ -154,6 +165,49 @@ function VaultContent() {
       window.history.replaceState({}, '', '/vault');
     }
   }, [searchParams, showToast, loadInitialData]);
+
+  // ── Listen for Popup Messages ──────────────────────────────────────────────
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'oauth_complete') {
+        const { connected, error } = event.data;
+        if (connected) {
+          const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
+          showToast(`✓ ${label} connected successfully!`, 'success');
+          loadInitialData();
+        }
+        if (error) {
+          const messages: Record<string, string> = {
+            facebook_denied:        'Facebook connection was cancelled.',
+            facebook_state_mismatch:'Facebook: security check failed. Please try again.',
+            facebook_token_failed:  'Facebook token exchange failed. Check your App credentials.',
+            x_denied:               'X connection was cancelled.',
+            x_state_mismatch:       'X: security check failed. Please try again.',
+            x_token_failed:         'X token exchange failed. Check your App credentials.',
+            linkedin_denied:        'LinkedIn connection was cancelled.',
+            linkedin_state_mismatch:'LinkedIn: security check failed. Please try again.',
+            linkedin_token_failed:  'LinkedIn token exchange failed. Check your App credentials.',
+          };
+          showToast(messages[error] ?? `Connection error: ${error}`, 'error');
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [showToast, loadInitialData]);
+
+  const handleConnectClick = (e: React.MouseEvent<HTMLAnchorElement>, platformId: string) => {
+    e.preventDefault();
+    const url = `/api/auth/${platformId}/connect?companyId=${activeCompanyId}`;
+    
+    // Calculate popup position to be centered
+    const width = 600;
+    const height = 700;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    
+    window.open(url, 'oauthPopup', `width=${width},height=${height},left=${left},top=${top}`);
+  };
 
   // ── Disconnect a platform ──────────────────────────────────────────────────
   const handleDisconnect = async (platformId: string) => {
@@ -647,6 +701,7 @@ function VaultContent() {
                         ) : (
                           <a
                             href={`/api/auth/${platform.id}/connect?companyId=${activeCompanyId}`}
+                            onClick={(e) => handleConnectClick(e, platform.id)}
                             style={{ flex: 1, textDecoration: 'none' }}
                             id={`connect-${platform.id}`}
                           >
