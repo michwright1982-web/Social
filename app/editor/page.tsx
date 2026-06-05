@@ -71,6 +71,42 @@ export default function EditorPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [enabledPlatforms, setEnabledPlatforms] = useState<Record<string, boolean>>(Object.fromEntries(platforms.map(p => [p.id, true])));
 
+  // ── Auto-detect connected platforms ──────────────────────────────────────────
+  useEffect(() => {
+    const loadPlatformStatus = async () => {
+      try {
+        const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+        const res = await fetch(`/api/auth/status?companyId=${companyId}&_t=${Date.now()}`);
+        if (res.ok) {
+          const statuses = await res.json();
+          setEnabledPlatforms(prev => {
+            const next = { ...prev };
+            let firstConnected: string | null = null;
+            
+            platforms.forEach(p => {
+              let apiId = p.id;
+              if (apiId === 'x (twitter)') apiId = 'x';
+              if (apiId === 'instagram') apiId = 'facebook';
+              
+              const isConnected = !!statuses[apiId]?.connected;
+              next[p.id] = isConnected;
+              
+              if (isConnected && !firstConnected) firstConnected = p.id;
+            });
+            
+            if (firstConnected) {
+              setActivePlatform(firstConnected);
+            }
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load platform status', err);
+      }
+    };
+    loadPlatformStatus();
+  }, []);
+
   // ── Images ─────────────────────────────────────────────────────────────────
   const [images, setImages] = useState<string[]>([]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -1199,9 +1235,22 @@ export default function EditorPage() {
                 </div>
 
                 {/* Publish */}
-                <motion.button id="publish-everywhere-btn" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '15px', fontWeight: 700, borderRadius: '14px' }} onClick={handlePublishAll} disabled={isPublishingAll} whileTap={{ scale: 0.98 }} whileHover={{ boxShadow: '0 8px 40px rgba(124,58,237,0.5)' }}>
-                  {isPublishingAll ? <><div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>{[0, 1, 2, 3, 4].map(i => <div key={i} className="wave-bar" style={{ animationDelay: `${i * 0.1}s`, height: '14px' }} />)}</div>Publishing…</> : publishDone ? <><RefreshCw size={16} /> Publish Again</> : <><Send size={16} /> <Zap size={14} /> Publish Everywhere</>}
-                </motion.button>
+                {(() => {
+                  const enabledCount = Object.values(enabledPlatforms).filter(Boolean).length;
+                  const enabledPlatformNames = platforms.filter(p => enabledPlatforms[p.id]).map(p => p.label);
+                  const isPublishDisabled = isPublishingAll || enabledCount === 0;
+                  
+                  let publishText = 'Publish Everywhere';
+                  if (enabledCount === 0) publishText = 'No Platforms Selected';
+                  else if (enabledCount === 1) publishText = `Publish to ${enabledPlatformNames[0]}`;
+                  else if (enabledCount < platforms.length) publishText = `Publish to ${enabledCount} Platforms`;
+
+                  return (
+                    <motion.button id="publish-everywhere-btn" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '15px', fontWeight: 700, borderRadius: '14px', opacity: isPublishDisabled ? 0.5 : 1, cursor: isPublishDisabled ? 'not-allowed' : 'pointer' }} onClick={handlePublishAll} disabled={isPublishDisabled} whileTap={isPublishDisabled ? {} : { scale: 0.98 }} whileHover={isPublishDisabled ? {} : { boxShadow: '0 8px 40px rgba(124,58,237,0.5)' }}>
+                      {isPublishingAll ? <><div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>{[0, 1, 2, 3, 4].map(i => <div key={i} className="wave-bar" style={{ animationDelay: `${i * 0.1}s`, height: '14px' }} />)}</div>Publishing…</> : publishDone ? <><RefreshCw size={16} /> Publish Again</> : <><Send size={16} /> {enabledCount > 1 && <Zap size={14} />} {publishText}</>}
+                    </motion.button>
+                  );
+                })()}
 
                 {/* Publish status */}
                 <AnimatePresence>

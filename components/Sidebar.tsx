@@ -261,16 +261,7 @@ export default function Sidebar() {
                     }
                   }}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-indicator"
-                      style={{
-                        position: 'absolute', left: '12px', width: '3px', height: '20px',
-                        background: 'linear-gradient(to bottom, #7c3aed, #06b6d4)',
-                        borderRadius: '2px',
-                      }}
-                    />
-                  )}
+
                   <Icon size={18} />
                   <span>{item.label}</span>
                   {item.href === '/studio' && (
