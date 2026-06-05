@@ -83,25 +83,25 @@ export default function EditorPage() {
         if (res.ok) {
           const statuses = await res.json();
           const nextConnected: Record<string, boolean> = {};
-          
+
           setEnabledPlatforms(prev => {
             const next = { ...prev };
             let firstConnected: string | null = null;
-            
+
             platforms.forEach(p => {
               let apiId = p.id;
               if (apiId === 'x (twitter)') apiId = 'x';
               if (apiId === 'instagram') apiId = 'facebook';
-              
+
               const isConnected = !!statuses[apiId]?.connected;
               nextConnected[p.id] = isConnected;
               next[p.id] = isConnected;
-              
+
               if (isConnected && !firstConnected) firstConnected = p.id;
             });
-            
+
             setConnectedPlatforms(nextConnected);
-            
+
             if (firstConnected) {
               setActivePlatform(firstConnected);
             }
@@ -240,7 +240,7 @@ export default function EditorPage() {
     };
     const onUp = () => { textDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-     
+
   }, [activeImageIdx, textLayersMap, editingTextId]);
 
   // ── Shape interactions ─────────────────────────────────────────────────────
@@ -263,7 +263,7 @@ export default function EditorPage() {
     };
     const onUp = () => { shapeDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-     
+
   }, [activeImageIdx, shapeLayersMap]);
 
   const startShapeResize = useCallback((layerId: string, handle: string, e: React.MouseEvent) => {
@@ -309,7 +309,7 @@ export default function EditorPage() {
     };
     const onUp = () => { shapeResizeRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-     
+
   }, [activeImageIdx, shapeLayersMap]);
 
   // ── Load images & logo ─────────────────────────────────────────────────────
@@ -397,7 +397,7 @@ export default function EditorPage() {
   const isCropping = activeTool === 'crop';
   useEffect(() => {
     if (activeCropRatio && isCropping) {
-       
+
       setCropRect(prev => { const h = prev.w / activeCropRatio; if (prev.y + h <= 100) return { ...prev, h }; return { ...prev, w: prev.h * activeCropRatio }; });
     }
   }, [activeCropRatio, isCropping]);
@@ -578,14 +578,14 @@ export default function EditorPage() {
                 line = t;
               }
             }
-            lines.push(line); 
+            lines.push(line);
             maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
           }
 
           let cx = tx + maxLineWidth / 2;
           if (layer.textAlign === 'center') cx = tx;
           else if (layer.textAlign === 'right') cx = tx - maxLineWidth / 2;
-          
+
           const totalHeight = lines.length * (sf * 1.25);
           const cy = ty + totalHeight / 2;
 
@@ -844,9 +844,9 @@ export default function EditorPage() {
                               key={layer.id}
                               onMouseDown={e => { e.stopPropagation(); setSelectedTextId(layer.id); startTextDrag(layer.id, e); }}
                               onClick={e => { e.stopPropagation(); setSelectedTextId(layer.id); if (activeTool !== 'text') setActiveTool('text'); }}
-                              onDoubleClick={e => { 
-                                e.stopPropagation(); 
-                                setEditingTextId(layer.id); 
+                              onDoubleClick={e => {
+                                e.stopPropagation();
+                                setEditingTextId(layer.id);
                                 if (layer.text === 'Your Text') updateLayer(layer.id, { text: '' });
                               }}
                               style={{ position: 'absolute', left: `${layer.x}%`, top: `${layer.y}%`, cursor: 'grab', zIndex: 15, userSelect: 'none' }}
@@ -1200,12 +1200,12 @@ export default function EditorPage() {
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', background: 'var(--input-bg)', padding: '6px 12px', borderRadius: '9px', border: '1px solid var(--input-border)' }}>
                           <span style={{ fontSize: '11px', fontWeight: 700, color: enabledPlatforms[activePlatform] ? '#a78bfa' : 'var(--text-secondary)' }}>{enabledPlatforms[activePlatform] ? 'Post' : 'Skip'}</span>
-                          <div style={{ width: '34px', height: '18px', background: enabledPlatforms[activePlatform] ? '#7c3aed' : 'var(--bg-secondary)', borderRadius: '9px', position: 'relative', transition: '0.25s', cursor: 'pointer', flexShrink: 0 }} onClick={e => { 
-                            e.preventDefault(); 
+                          <div style={{ width: '34px', height: '18px', background: enabledPlatforms[activePlatform] ? '#7c3aed' : 'var(--bg-secondary)', borderRadius: '9px', position: 'relative', transition: '0.25s', cursor: 'pointer', flexShrink: 0 }} onClick={e => {
+                            e.preventDefault();
                             if (connectedPlatforms[activePlatform] === false) {
                               setShowConnectModal(activePlatform);
                             } else {
-                              setEnabledPlatforms(prev => ({ ...prev, [activePlatform]: !prev[activePlatform] })); 
+                              setEnabledPlatforms(prev => ({ ...prev, [activePlatform]: !prev[activePlatform] }));
                             }
                           }}>
                             <div style={{ width: '14px', height: '14px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: enabledPlatforms[activePlatform] ? '18px' : '2px', transition: '0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }} />
@@ -1254,7 +1254,7 @@ export default function EditorPage() {
                   const enabledCount = Object.values(enabledPlatforms).filter(Boolean).length;
                   const enabledPlatformNames = platforms.filter(p => enabledPlatforms[p.id]).map(p => p.label);
                   const isPublishDisabled = isPublishingAll || enabledCount === 0;
-                  
+
                   let publishText = 'Publish Everywhere';
                   if (enabledCount === 0) publishText = 'No Platforms Selected';
                   else if (enabledCount === 1) publishText = `Publish to ${enabledPlatformNames[0]}`;
