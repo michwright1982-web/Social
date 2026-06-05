@@ -34,7 +34,7 @@ const BRAND_FONTS = [
 ];
 
 type PublishStatus = 'idle' | 'publishing' | 'success' | 'error';
-interface PlatformStatus { status: PublishStatus; message?: string; }
+interface PlatformStatus { status: PublishStatus; message?: string; postId?: string; }
 interface CropRect { x: number; y: number; w: number; h: number; }
 interface TextLayer {
   id: string; text: string;
@@ -633,7 +633,7 @@ export default function EditorPage() {
         const res = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: p.id, images: composed, caption: captions[p.id] || '', companyId }) });
         if (!res.ok) { const t = await res.text(); let m = t.substring(0, 50); try { m = JSON.parse(t).error || m; } catch { } setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: `Error ${res.status}: ${m}` } })); continue; }
         const d = await res.json();
-        setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: d.success ? 'success' : 'error', message: d.success ? undefined : d.error || 'Failed' } }));
+        setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: d.success ? 'success' : 'error', message: d.success ? undefined : d.error || 'Failed', postId: d.postId } }));
       } catch (e) { setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: e instanceof Error ? e.message : 'Network error' } })); }
     }
     setIsPublishingAll(false); setPublishDone(true);
@@ -1278,7 +1278,18 @@ export default function EditorPage() {
                         return (
                           <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--glass-border)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Icon size={14} color={p.color} /><span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>{p.label}</span></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>{s?.status && statusIcon(s.status)}<span style={{ fontSize: '11px', color: s?.status === 'success' ? '#34d399' : s?.status === 'error' ? '#f87171' : s?.status === 'publishing' ? '#fbbf24' : '#475569' }}>{s?.status === 'idle' ? 'Queued' : s?.status === 'publishing' ? 'Publishing…' : s?.message}</span></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {s?.status && statusIcon(s.status)}
+                              {s?.status === 'success' ? (
+                                s?.postId ? (
+                                  <a href={p.id === 'facebook' ? `https://facebook.com/${s.postId}` : p.id === 'linkedin' ? `https://www.linkedin.com/feed/update/${s.postId}` : '#'} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#7c3aed', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>View Post <Link2 size={10} /></a>
+                                ) : (
+                                  <span style={{ fontSize: '11px', color: '#34d399' }}>Published</span>
+                                )
+                              ) : (
+                                <span style={{ fontSize: '11px', color: s?.status === 'error' ? '#f87171' : s?.status === 'publishing' ? '#fbbf24' : '#475569' }}>{s?.status === 'idle' ? 'Queued' : s?.status === 'publishing' ? 'Publishing…' : s?.message}</span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
