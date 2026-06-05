@@ -8,7 +8,7 @@ import Topbar from '@/components/Topbar';
 import {
   KeyRound, Eye, EyeOff, Plus, Trash2, CheckCircle2,
   AlertCircle, Lock, Shield,
-  Zap, ExternalLink, RefreshCw,
+  Zap, ExternalLink, RefreshCw, Copy, Check,
   Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings,
   X, Upload,
 } from 'lucide-react';
