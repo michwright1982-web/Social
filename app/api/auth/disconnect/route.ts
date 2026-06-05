@@ -33,13 +33,7 @@ export async function POST(req: NextRequest) {
   const cookieName = `${PLATFORM_COOKIES[platform]}_${companyId}`;
 
   const response = NextResponse.json({ success: true, platform });
-  response.cookies.set(cookieName, '', {
-    httpOnly:  true,
-    secure:    process.env.NODE_ENV === 'production',
-    sameSite:  'lax',
-    maxAge:    0,     // Expire immediately
-    path:      '/',
-  });
+  response.cookies.delete(cookieName);
 
   return response;
 }
