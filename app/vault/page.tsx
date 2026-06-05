@@ -77,9 +77,9 @@ function VaultContent() {
   const [disconnecting, setDisconnecting]   = useState<string | null>(null);
 
   // ── Developer App Creds state ──────────────────────────────────────────────
-  const [oauthCreds, setOauthCreds] = useState<Record<string, { clientId: string; isSecretSet: boolean }>>({});
+  const [oauthCreds, setOauthCreds] = useState<Record<string, { clientId: string; isSecretSet: boolean; pageId?: string }>>({});
   const [editingCredsPlatform, setEditingCredsPlatform] = useState<string | null>(null);
-  const [credsForm, setCredsForm] = useState({ clientId: '', clientSecret: '' });
+  const [credsForm, setCredsForm] = useState({ clientId: '', clientSecret: '', pageId: '' });
   const [savingCreds, setSavingCreds] = useState(false);
 
 
@@ -295,7 +295,7 @@ function VaultContent() {
       await fetch(`/api/auth/credentials?companyId=${companyId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [platformId]: { clientId: '', clientSecret: '' } })
+        body: JSON.stringify({ [platformId]: { clientId: '', clientSecret: '', pageId: '' } })
       });
       await loadInitialData();
       showToast('Credentials cleared', 'success');
@@ -572,7 +572,7 @@ function VaultContent() {
                                   setEditingCredsPlatform(null);
                                 } else {
                                   setEditingCredsPlatform(platform.id);
-                                  setCredsForm({ clientId: creds?.clientId || '', clientSecret: '' });
+                                  setCredsForm({ clientId: creds?.clientId || '', clientSecret: '', pageId: creds?.pageId || '' });
                                 }
                               }}
                             >
@@ -611,6 +611,15 @@ function VaultContent() {
                                 onChange={e => setCredsForm(prev => ({ ...prev, clientSecret: e.target.value }))}
                                 style={{ fontSize: '13px', fontFamily: 'monospace' }} 
                               />
+                              {platform.id === 'linkedin' && (
+                                <input 
+                                  className="input-field" 
+                                  placeholder="Organization ID (e.g. 1234567) - Leave blank for personal profile" 
+                                  value={credsForm.pageId}
+                                  onChange={e => setCredsForm(prev => ({ ...prev, pageId: e.target.value }))}
+                                  style={{ fontSize: '13px', fontFamily: 'monospace' }} 
+                                />
+                              )}
                               
                               {platform.id !== 'facebook' && (
                                 <div style={{ marginTop: '4px', padding: '10px 12px', background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '8px' }}>
@@ -663,7 +672,7 @@ function VaultContent() {
                                 setEditingCredsPlatform(null);
                               } else {
                                 setEditingCredsPlatform(platform.id);
-                                setCredsForm({ clientId: '', clientSecret: '' });
+                                setCredsForm({ clientId: '', clientSecret: '', pageId: '' });
                               }
                             }}
                           >

@@ -7,6 +7,7 @@ export type OAuthAppCredentials = {
   [platform: string]: {
     clientId: string;
     clientSecret: string;
+    pageId?: string;
   };
 };
 
@@ -28,11 +29,12 @@ export async function GET(req: NextRequest) {
     
     // For GET requests, we shouldn't send back full secrets to the client.
     // Instead we mask them so the UI knows they are set, but they aren't exposed.
-    const maskedCreds: Record<string, { clientId: string; isSecretSet: boolean }> = {};
+    const maskedCreds: Record<string, { clientId: string; isSecretSet: boolean; pageId?: string }> = {};
     for (const [platform, config] of Object.entries(creds)) {
       maskedCreds[platform] = {
         clientId: config.clientId,
         isSecretSet: !!config.clientSecret,
+        pageId: config.pageId,
       };
     }
     
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
   const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
   const cookieName = `${OAUTH_CREDS_COOKIE_PREFIX}${companyId}`;
 
-  let newCreds: Record<string, { clientId: string; clientSecret?: string }> = {};
+  let newCreds: Record<string, { clientId: string; clientSecret?: string; pageId?: string }> = {};
   try {
     newCreds = await req.json();
   } catch {
@@ -86,6 +88,7 @@ export async function POST(req: NextRequest) {
       clientId: config.clientId.trim(),
       // Use new secret if provided, otherwise keep old secret
       clientSecret: (config.clientSecret || oldSecret || '').trim(),
+      pageId: config.pageId?.trim() || existingCreds[platform]?.pageId || '',
     };
   }
 

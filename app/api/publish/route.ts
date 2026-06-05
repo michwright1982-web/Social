@@ -203,13 +203,28 @@ export async function POST(req: NextRequest) {
 
       const { access_token } = JSON.parse(await decryptToken(liCookie));
 
-      // 1. Get User URN
-      const meRes = await fetch('https://api.linkedin.com/v2/userinfo', {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-      if (!meRes.ok) throw new Error('Failed to fetch LinkedIn profile');
-      const { sub } = await meRes.json();
-      const authorUrn = `urn:li:person:${sub}`;
+      // 1. Get User URN or Organization URN
+      let authorUrn = '';
+      
+      // Check if a pageId (Organization ID) was configured in the app credentials
+      const appCredsCookie = req.cookies.get(`oauth_app_creds_${companyId}`)?.value;
+      if (appCredsCookie) {
+        try {
+          const creds = JSON.parse(await decryptToken(appCredsCookie));
+          if (creds.linkedin?.pageId) {
+            authorUrn = `urn:li:organization:${creds.linkedin.pageId}`;
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (!authorUrn) {
+        const meRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+          headers: { Authorization: `Bearer ${access_token}` },
+        });
+        if (!meRes.ok) throw new Error('Failed to fetch LinkedIn profile');
+        const { sub } = await meRes.json();
+        authorUrn = `urn:li:person:${sub}`;
+      }
 
       // We only support single image for LinkedIn in this basic implementation
       const imageBase64 = images[0];
