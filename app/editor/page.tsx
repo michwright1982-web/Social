@@ -8,7 +8,7 @@ import Topbar from '@/components/Topbar';
 import {
   Send, Check, Copy, RefreshCw, Sparkles, AlertCircle, CheckCircle2,
   Loader2, Hash, AtSign, Clock, Zap, Globe, ImageIcon, Upload, X,
-  Crop, Eye, EyeOff, Type, Plus, Trash2, ChevronDown, Square, MousePointer2, Circle, Triangle, Hexagon,
+  Crop, Eye, EyeOff, Type, Plus, Trash2, ChevronDown, ChevronLeft, ChevronRight, Square, MousePointer2, Circle, Triangle, Hexagon,
   AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd
 } from 'lucide-react';
@@ -644,7 +644,7 @@ export default function EditorPage() {
 
               {/* ══════ COL 1 — Vertical Tool Rail ══════ */}
               <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35 }}
-                style={{ position: 'sticky', top: '80px' }}>
+                style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{
                   display: 'flex', flexDirection: 'column', gap: '4px',
                   background: 'var(--bg-card)', border: '1px solid var(--glass-border)',
@@ -696,9 +696,28 @@ export default function EditorPage() {
                 </div>
               </motion.div>
 
+
               {/* ══════ COL 2 — Canvas ══════ */}
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
                 style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+                {/* ── Vertical Image List (Absolutely positioned to match canvas bottom) ── */}
+                {images.length > 0 && (
+                  <div style={{ position: 'absolute', bottom: 0, left: '-68px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+                    {images.map((img, i) => (
+                      <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
+                        <div onClick={() => setActiveImageIdx(i)} style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', border: `2px solid ${i === activeImageIdx ? '#7c3aed' : 'rgba(124,58,237,0.15)'}`, cursor: 'pointer', transition: 'border-color 0.2s', boxShadow: i === activeImageIdx ? '0 0 0 3px rgba(124,58,237,0.25)' : 'none' }}>
+                          <img src={img} alt={`img${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                        {/* badges */}
+                        {(textLayersMap[i] ?? []).length > 0 && <div style={{ position: 'absolute', top: -4, left: -4, width: 12, height: 12, borderRadius: '50%', background: '#06b6d4', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6px', color: 'white', fontWeight: 700 }}>T</div>}
+                        {(logoScaleMap[i] !== undefined || logoPosMap[i] !== undefined) && <div style={{ position: 'absolute', bottom: 18, left: -4, width: 12, height: 12, borderRadius: '50%', background: '#7c3aed', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6px', color: 'white', fontWeight: 700 }}>L</div>}
+                        <div style={{ position: 'absolute', bottom: -2, right: -4, width: 14, height: 14, borderRadius: '50%', background: i === activeImageIdx ? '#7c3aed' : 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: 'white', fontWeight: 700 }}>{i + 1}</div>
+                        <button onClick={() => handleRemoveImage(i)} style={{ position: 'absolute', top: -5, right: -5, width: 14, height: 14, borderRadius: '50%', background: 'rgba(239,68,68,0.8)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}><X size={8} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* ── Canvas card ── */}
                 <div className="glass-card" style={{ position: 'relative' }}>
@@ -1101,31 +1120,6 @@ export default function EditorPage() {
                     </div>
                   )}
                 </div>
-
-                {/* ── Image carousel strip ── */}
-                {images.length > 1 && (
-                  <div className="glass-card" style={{ padding: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Carousel · {images.length} images</span>
-                      <span style={{ fontSize: '10px', color: '#a78bfa', fontWeight: 600 }}>Per-image layers</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
-                      {images.map((img, i) => (
-                        <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-                          <div onClick={() => setActiveImageIdx(i)} style={{ width: '72px', height: '72px', borderRadius: '10px', overflow: 'hidden', border: `2px solid ${i === activeImageIdx ? '#7c3aed' : 'rgba(124,58,237,0.15)'}`, cursor: 'pointer', transition: 'border-color 0.2s', boxShadow: i === activeImageIdx ? '0 0 0 3px rgba(124,58,237,0.25)' : 'none' }}>
-                            <img src={img} alt={`img${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                          {/* badges */}
-                          {(textLayersMap[i] ?? []).length > 0 && <div style={{ position: 'absolute', top: -4, left: -4, width: 16, height: 16, borderRadius: '50%', background: '#06b6d4', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: 'white', fontWeight: 700 }}>T</div>}
-                          {(logoScaleMap[i] !== undefined || logoPosMap[i] !== undefined) && <div style={{ position: 'absolute', bottom: 18, left: -4, width: 16, height: 16, borderRadius: '50%', background: '#7c3aed', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: 'white', fontWeight: 700 }}>L</div>}
-                          <div style={{ position: 'absolute', bottom: 3, right: -4, width: 16, height: 16, borderRadius: '50%', background: i === activeImageIdx ? '#7c3aed' : 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: 'white', fontWeight: 700 }}>{i + 1}</div>
-                          <button onClick={() => handleRemoveImage(i)} style={{ position: 'absolute', top: -5, right: -5, width: 16, height: 16, borderRadius: '50%', background: 'rgba(239,68,68,0.8)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}><X size={9} /></button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
               </motion.div>
 
               {/* ══════════════ RIGHT — Caption Editor ══════════════ */}

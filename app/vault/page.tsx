@@ -12,7 +12,7 @@ import {
   Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings,
   X, Upload,
 } from 'lucide-react';
-import { FacebookIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
+import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ type SocialStatuses = Record<string, PlatformStatus>;
 // ─── Platform definitions ─────────────────────────────────────────────────────
 
 const SOCIAL_PLATFORMS = [
-  { id: 'facebook', label: 'Facebook', color: '#1877F2', icon: <FacebookIcon size={18} /> },
+  { id: 'facebook', label: 'Facebook & Instagram', color: '#1877F2', icon: <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}><FacebookIcon size={18} /><InstagramIcon size={18} /></div> },
   { id: 'x',        label: 'X (Twitter)', color: 'currentColor', icon: <XSocialIcon  size={18} /> },
   { id: 'linkedin', label: 'LinkedIn',  color: '#0A66C2', icon: <LinkedinIcon  size={18} /> },
 ];
@@ -603,7 +603,7 @@ function VaultContent() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: `${platform.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: platform.color }}>
+                          <div style={{ minWidth: '42px', padding: '0 10px', height: '42px', borderRadius: '12px', background: `${platform.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: platform.color }}>
                             {platform.icon}
                           </div>
                           <div>
