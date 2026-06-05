@@ -69,6 +69,7 @@ function VaultContent() {
   const [newLabel, setNewLabel]       = useState('');
   const [copiedId, setCopiedId]       = useState<string | null>(null);
   const [testingId, setTestingId]     = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { valid: boolean; message: string }>>({});
   
   const [activeCompanyId, setActiveCompanyId] = useState('default');
 
