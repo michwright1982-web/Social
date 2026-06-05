@@ -129,9 +129,12 @@ function VaultContent() {
     const error     = searchParams.get('error');
 
     if (connected || error) {
-      if (typeof window !== 'undefined' && window.opener && window.opener !== window) {
+      const isPopup = typeof window !== 'undefined' && (window.name === 'oauthPopup' || (window.opener && window.opener !== window));
+      if (isPopup) {
         // We are inside a popup window! Notify parent and close.
-        window.opener.postMessage({ type: 'oauth_complete', connected, error }, '*');
+        if (window.opener) {
+          window.opener.postMessage({ type: 'oauth_complete', connected, error }, '*');
+        }
         window.close();
         // Fallback close just in case
         setTimeout(() => window.close(), 100);
@@ -206,7 +209,17 @@ function VaultContent() {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
     
-    window.open(url, 'oauthPopup', `width=${width},height=${height},left=${left},top=${top}`);
+    const popup = window.open(url, 'oauthPopup', `width=${width},height=${height},left=${left},top=${top}`);
+    
+    // Fallback polling: if popup closes, reload data just in case postMessage failed
+    if (popup) {
+      const pollTimer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(pollTimer);
+          loadInitialData(); // Refresh the connection status on the parent window
+        }
+      }, 500);
+    }
   };
 
   // ── Disconnect a platform ──────────────────────────────────────────────────
