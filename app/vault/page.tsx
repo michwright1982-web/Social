@@ -99,10 +99,11 @@ function VaultContent() {
     setStatusLoading(true);
     const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
     try {
+      const ts = Date.now();
       const [statusRes, keysRes, credsRes] = await Promise.all([
-        fetch(`/api/auth/status?companyId=${companyId}`),
-        fetch(`/api/keys?companyId=${companyId}`),
-        fetch(`/api/auth/credentials?companyId=${companyId}`)
+        fetch(`/api/auth/status?companyId=${companyId}&_t=${ts}`),
+        fetch(`/api/keys?companyId=${companyId}&_t=${ts}`),
+        fetch(`/api/auth/credentials?companyId=${companyId}&_t=${ts}`)
       ]);
       
       if (statusRes.ok) setSocialStatuses(await statusRes.json());
@@ -177,7 +178,7 @@ function VaultContent() {
         if (connected) {
           const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
           showToast(`✓ ${label} connected successfully!`, 'success');
-          loadInitialData();
+          setTimeout(() => loadInitialData(), 500);
         }
         if (error) {
           const messages: Record<string, string> = {
@@ -216,7 +217,7 @@ function VaultContent() {
       const pollTimer = setInterval(() => {
         if (popup.closed) {
           clearInterval(pollTimer);
-          loadInitialData(); // Refresh the connection status on the parent window
+          setTimeout(() => loadInitialData(), 500); // Refresh the connection status on the parent window
         }
       }, 500);
     }
