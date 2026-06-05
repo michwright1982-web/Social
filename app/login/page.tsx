@@ -39,8 +39,6 @@ export default function LoginPage() {
     <div style={{
       minHeight: '100vh',
       backgroundColor: 'transparent',
-      backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
-      backgroundSize: '24px 24px',
       color: 'var(--text-primary)',
       fontFamily: "system-ui, -apple-system, sans-serif",
       position: 'relative',
@@ -71,7 +69,7 @@ export default function LoginPage() {
             <div style={{ display: 'inline-block', border: '1px solid var(--glass-border)', borderRadius: '9999px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '24px', background: 'var(--bg-card)' }}>
               Focus on AI-Driven Marketing Automation
             </div>
-            <h1 style={{ fontSize: '56px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '24px', fontFamily: "'Outfit', sans-serif" }}>
+            <h1 style={{ fontSize: '56px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '24px', fontFamily: "'Saira', sans-serif" }}>
               Multi-Channel AI Marketing & Creative Studio
             </h1>
             <p style={{ fontSize: '18px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '48px', maxWidth: '90%' }}>

@@ -2,9 +2,11 @@
 
 import { Sparkles, ArrowRight, Wand2, PenLine, Target, KeyRound, PlayCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 export default function LandingPage() {
+  const { scrollYProgress } = useScroll();
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -13,14 +15,16 @@ export default function LandingPage() {
       position: 'relative',
       overflowX: 'hidden'
     }}>
+
+
       {/* Navbar */}
-      <header style={{ 
-        padding: '24px 48px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        width: '100%', 
-        maxWidth: '1400px', 
+      <header style={{
+        padding: '24px 48px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: '1400px',
         margin: '0 auto',
         position: 'relative',
         zIndex: 10
@@ -35,7 +39,7 @@ export default function LandingPage() {
           </div>
           AI Marketing Hub
         </div>
-        
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>
           <a href="#features" style={{ textDecoration: 'none', color: 'inherit', transition: 'color 0.2s' }}>Features</a>
           <a href="#pricing" style={{ textDecoration: 'none', color: 'inherit', transition: 'color 0.2s' }}>Pricing</a>
@@ -44,19 +48,19 @@ export default function LandingPage() {
             Log in
           </Link>
           <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <button style={{ 
-              padding: '8px 16px', 
-              background: 'var(--bg-card)', 
-              border: '1px solid var(--glass-border)', 
-              borderRadius: '8px', 
-              fontSize: '14px', 
-              fontWeight: 600, 
-              color: 'var(--text-primary)', 
+            <button style={{
+              padding: '8px 16px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-card)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-card)'}
             >
               Sign up free
             </button>
@@ -65,93 +69,104 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section style={{ 
-        flex: 1, 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+      <section style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         padding: '120px 24px',
         textAlign: 'center',
         position: 'relative',
         zIndex: 10
       }}>
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ maxWidth: '800px' }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          style={{ maxWidth: '800px', zIndex: 2 }}
         >
-          <div style={{ 
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            border: '1px solid var(--glass-border)', borderRadius: '9999px', 
-            padding: '6px 16px', fontSize: '13px', fontWeight: 600, 
-            color: 'var(--accent-cyan)', marginBottom: '32px', 
-            background: 'var(--bg-card)', backdropFilter: 'blur(10px)'
-          }}>
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              border: '1px solid var(--glass-border)', borderRadius: '9999px',
+              padding: '6px 16px', fontSize: '13px', fontWeight: 600,
+              color: 'var(--accent-cyan)', marginBottom: '32px',
+              background: 'var(--bg-card)', backdropFilter: 'blur(10px)'
+            }}>
             <Sparkles size={14} /> Introducing v2.0 AI Generation
-          </div>
-          
-          <h1 style={{ 
-            fontSize: '64px', fontWeight: 800, color: 'var(--text-primary)', 
-            lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '24px', 
-            fontFamily: "'Outfit', sans-serif" 
+          </motion.div>
+
+          <h1 style={{
+            fontSize: '64px', fontWeight: 800, color: 'var(--text-primary)',
+            lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '24px',
+            fontFamily: "'Saira', sans-serif"
           }}>
             Scale your brand with <br />
-            <span style={{ 
-              background: 'var(--gradient-brand)', 
-              WebkitBackgroundClip: 'text', 
-              WebkitTextFillColor: 'transparent' 
+            <span style={{
+              background: 'var(--gradient-brand)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
             }}>
               Intelligent Marketing
             </span>
           </h1>
-          
-          <p style={{ 
-            fontSize: '20px', color: 'var(--text-secondary)', lineHeight: 1.6, 
-            marginBottom: '48px', maxWidth: '600px', margin: '0 auto 48px' 
+
+          <p style={{
+            fontSize: '20px', color: 'var(--text-secondary)', lineHeight: 1.6,
+            marginBottom: '48px', maxWidth: '600px', margin: '0 auto 48px'
           }}>
             The all-in-one workspace to generate stunning visuals, craft platform-specific copy, and manage your entire brand identity effortlessly.
           </p>
-          
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
+
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', marginBottom: '64px' }}>
             <Link href="/signup" style={{ textDecoration: 'none' }}>
-              <button style={{ 
-                display: 'flex', alignItems: 'center', gap: '8px', 
-                padding: '16px 32px', background: 'var(--gradient-brand)', 
-                border: 'none', borderRadius: '12px', fontSize: '16px', 
-                fontWeight: 600, color: '#ffffff', cursor: 'pointer', 
-                boxShadow: '0 8px 32px rgba(124,58,237,0.4)', transition: 'transform 0.2s' 
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '16px 32px', background: 'var(--gradient-brand)',
+                  border: 'none', borderRadius: '12px', fontSize: '16px',
+                  fontWeight: 600, color: '#ffffff', cursor: 'pointer',
+                  boxShadow: '0 8px 32px rgba(124,58,237,0.4)'
+                }}>
                 Start Free Trial <ArrowRight size={18} />
-              </button>
+              </motion.button>
             </Link>
-            <button style={{ 
-              display: 'flex', alignItems: 'center', gap: '8px', 
-              padding: '16px 32px', background: 'transparent', 
-              border: '1px solid var(--glass-border)', borderRadius: '12px', 
-              fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', 
-              cursor: 'pointer', transition: 'background 0.2s' 
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
+            <motion.button
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.05)' }}
+              whileTap={{ scale: 0.95 }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '16px 32px', background: 'transparent',
+                border: '1px solid var(--glass-border)', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)',
+                cursor: 'pointer'
+              }}>
               <PlayCircle size={20} /> Watch Demo
-            </button>
+            </motion.button>
           </div>
         </motion.div>
+
+
       </section>
 
       {/* Features Section */}
       <section id="features" style={{ padding: '80px 24px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid var(--glass-border)', position: 'relative', zIndex: 10 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <h2 style={{ fontSize: '36px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', fontFamily: "'Outfit', sans-serif" }}>Everything you need</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            style={{ textAlign: 'center', marginBottom: '64px' }}
+          >
+            <h2 style={{ fontSize: '36px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', fontFamily: "'Saira', sans-serif" }}>Everything you need</h2>
             <p style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>Powerful tools designed for modern marketing teams.</p>
-          </div>
+          </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             {[
@@ -160,16 +175,23 @@ export default function LandingPage() {
               { icon: Target, title: 'Brand Context', desc: 'Teach the AI your exact brand voice, fonts, and hex codes.', color: '#f472b6' },
               { icon: KeyRound, title: 'Secure Vault', desc: 'Store API keys and credentials locally and securely.', color: '#34d399' }
             ].map((feature, idx) => (
-              <div key={idx} style={{ 
-                background: 'var(--bg-card)', border: '1px solid var(--glass-border)', 
-                borderRadius: '16px', padding: '32px', backdropFilter: 'blur(10px)' 
-              }}>
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                whileHover={{ scale: 1.02, borderColor: feature.color, boxShadow: `0 0 30px ${feature.color}66` }}
+                style={{
+                  background: 'var(--bg-card)', border: '1px solid var(--glass-border)',
+                  borderRadius: '16px', padding: '32px', backdropFilter: 'blur(10px)', transition: 'border-color 0.3s'
+                }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `rgba(255,255,255,0.05)`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid var(--glass-border)' }}>
                   <feature.icon size={24} color={feature.color} />
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>{feature.title}</h3>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{feature.desc}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -178,18 +200,29 @@ export default function LandingPage() {
       {/* Pricing Section */}
       <section id="pricing" style={{ padding: '120px 24px', position: 'relative', zIndex: 10 }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <h2 style={{ fontSize: '36px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', fontFamily: "'Outfit', sans-serif" }}>Simple, transparent pricing</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            style={{ textAlign: 'center', marginBottom: '64px' }}
+          >
+            <h2 style={{ fontSize: '36px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', fontFamily: "'Saira', sans-serif" }}>Simple, transparent pricing</h2>
             <p style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>Start for free, scale when you need to.</p>
-          </div>
+          </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', alignItems: 'center' }}>
-            
+
             {/* Pro Plan */}
-            <div style={{ 
-              background: 'var(--bg-card)', border: '1px solid var(--glass-border)', 
-              borderRadius: '24px', padding: '48px', backdropFilter: 'blur(10px)' 
-            }}>
+            <motion.div
+              whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(167,139,250,0.5)', borderColor: 'rgba(167,139,250,0.8)' }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              viewport={{ once: true }}
+              style={{
+                background: 'var(--bg-card)', border: '1px solid var(--glass-border)',
+                borderRadius: '24px', padding: '48px', backdropFilter: 'blur(10px)', transition: 'border-color 0.3s'
+              }}>
               <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Pro</h3>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>Perfect for solo creators and small teams.</p>
               <div style={{ fontSize: '48px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '32px' }}>$49<span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>/mo</span></div>
@@ -201,18 +234,27 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link href="/signup" style={{ textDecoration: 'none' }}>
-                <button style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px solid var(--glass-border)', borderRadius: '10px', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <button style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px solid var(--glass-border)', borderRadius: '10px', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', transition: 'background 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
                   Get Started
                 </button>
               </Link>
-            </div>
+            </motion.div>
 
             {/* Agency Plan */}
-            <div style={{ 
-              background: 'var(--bg-card)', border: '1px solid var(--glass-border)', 
-              borderRadius: '24px', padding: '48px', backdropFilter: 'blur(20px)',
-              position: 'relative', overflow: 'hidden'
-            }}>
+            <motion.div
+              whileHover={{ scale: 1.02, boxShadow: '0 0 50px rgba(6,182,212,0.5)', borderColor: 'rgba(6,182,212,0.8)' }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              viewport={{ once: true }}
+              style={{
+                background: 'var(--bg-card)', border: '1px solid rgba(124,58,237,0.3)',
+                borderRadius: '24px', padding: '48px', backdropFilter: 'blur(20px)',
+                position: 'relative', overflow: 'hidden'
+              }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'var(--gradient-brand)' }} />
               <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Agency</h3>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>For scaling marketing teams.</p>
@@ -225,12 +267,15 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link href="/signup" style={{ textDecoration: 'none' }}>
-                <button style={{ width: '100%', padding: '14px', background: 'var(--gradient-brand)', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 600, color: '#ffffff', cursor: 'pointer' }}>
+                <button style={{ width: '100%', padding: '14px', background: 'var(--gradient-brand)', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 600, color: '#ffffff', cursor: 'pointer', transition: 'filter 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
+                >
                   Start 14-Day Free Trial
                 </button>
               </Link>
-            </div>
-            
+            </motion.div>
+
           </div>
         </div>
       </section>

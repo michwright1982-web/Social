@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
                   key={range}
                   style={{
                     padding: '7px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 600,
-                    cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                    cursor: 'pointer', fontFamily: "'Saira', sans-serif",
                     background: i === 1 ? 'rgba(124,58,237,0.2)' : 'var(--input-bg)',
                     border: i === 1 ? '1px solid rgba(124,58,237,0.4)' : '1px solid var(--input-border)',
                     color: i === 1 ? '#a78bfa' : 'var(--text-secondary)',
@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
                         <Icon size={16} color={stat.color} />
                       </div>
                     </div>
-                    <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.5px' }}>{displayVal}</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Saira', sans-serif", letterSpacing: '-0.5px' }}>{displayVal}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px', fontWeight: 500 }}>{stat.label}</div>
                   </motion.div>
                 );

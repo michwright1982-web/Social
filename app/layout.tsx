@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Starfield from "@/components/Starfield";
 
 export const metadata: Metadata = {
   title: "AI Marketing Hub — Multi-Channel Creative Studio",
@@ -13,11 +14,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        <div className="orb orb-1" />
-        <div className="orb orb-2" />
-        <div className="orb orb-3" />
-        {children}
+      <body style={{ margin: 0, overflowX: 'hidden' }}>
+        <Starfield />
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', zIndex: 1, pointerEvents: 'none' }} />
+        <main style={{ position: 'relative', zIndex: 10, minHeight: '100vh' }}>
+          {children}
+        </main>
       </body>
     </html>
   );

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 const FONTS = [
-  { id: 'Inter', label: 'Inter (Sans-serif)', type: 'sans-serif' },
+  { id: 'Saira', label: 'Inter (Sans-serif)', type: 'sans-serif' },
   { id: 'Playfair Display', label: 'Playfair Display (Serif)', type: 'serif' },
   { id: 'Roboto', label: 'Roboto (Sans-serif)', type: 'sans-serif' },
   { id: 'Montserrat', label: 'Montserrat (Sans-serif)', type: 'sans-serif' },
@@ -22,7 +22,7 @@ export default function BrandIdentityPage() {
 
   const [companyName, setCompanyName] = useState('');
   const [brandContext, setBrandContext] = useState('');
-  const [brandFont, setBrandFont] = useState('Inter');
+  const [brandFont, setBrandFont] = useState('Saira');
   const [brandColors, setBrandColors] = useState<string[]>(['#7c3aed']);
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -52,7 +52,7 @@ export default function BrandIdentityPage() {
       if (active) {
         setCompanyName(active.name || '');
         setBrandContext(active.context || '');
-        setBrandFont(active.font || 'Inter');
+        setBrandFont(active.font || 'Saira');
         setBrandColors(active.colors || ['#7c3aed']);
         setCompanyLogo(active.logo || null);
       }
@@ -194,7 +194,7 @@ export default function BrandIdentityPage() {
             {/* ── Page Header & Save Action ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: '12px', borderBottom: '1px solid var(--glass-border)' }}>
               <div>
-                <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Brand Profile</h1>
+                <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Saira', sans-serif" }}>Brand Profile</h1>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>These settings instruct the AI on how to render your visual identity.</p>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>

@@ -476,7 +476,7 @@ export default function StudioPage() {
                         <Sparkles size={28} color="#7c3aed" />
                       </div>
                     </motion.div>
-                    <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Ready to Create</h2>
+                    <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Saira', sans-serif" }}>Ready to Create</h2>
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '340px', lineHeight: 1.6 }}>
                       Upload a reference design, craft your prompt, and let AI generate stunning variations tailored to your campaign.
                     </p>
@@ -680,7 +680,7 @@ export default function StudioPage() {
             {/* Art Style Studio Section */}
             <div style={{ marginBottom: '0' }}>
               <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Outfit', sans-serif" }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Saira', sans-serif" }}>
                   <Sparkles size={18} color="#7c3aed" /> Art Style Studio
                 </h2>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -926,7 +926,7 @@ export default function StudioPage() {
                           <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500, lineHeight: '1.5', flexShrink: 0 }}>{activeStyle.description}</div>
                           <div style={{
                             fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.75',
-                            whiteSpace: 'pre-wrap', fontFamily: "'Inter', sans-serif",
+                            whiteSpace: 'pre-wrap', fontFamily: "'Saira', sans-serif",
                           }}>
                             {activeStyle.rules}
                           </div>
@@ -1011,7 +1011,7 @@ export default function StudioPage() {
                     {STYLES.map(s => (
                       <button key={s.id} onClick={() => setSelectedStyle(s.id)} style={{
                         padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, cursor: 'pointer',
-                        fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', flexShrink: 0,
+                        fontFamily: "'Saira', sans-serif", whiteSpace: 'nowrap', flexShrink: 0,
                         background: selectedStyle === s.id ? 'rgba(124,58,237,0.2)' : 'var(--bg-secondary)',
                         border: selectedStyle === s.id ? '1px solid rgba(124,58,237,0.4)' : '1px solid var(--input-border)',
                         color: selectedStyle === s.id ? '#a78bfa' : 'var(--text-secondary)', transition: 'all 0.2s',

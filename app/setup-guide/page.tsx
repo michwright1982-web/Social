@@ -96,7 +96,7 @@ function GuideContent() {
                     border: 'none', cursor: 'pointer',
                     background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
                     color: isActive ? p.color : '#64748b',
-                    fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600,
+                    fontFamily: "'Saira', sans-serif", fontSize: '13px', fontWeight: 600,
                     transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                   }}
                 >

@@ -25,7 +25,7 @@ const platforms = [
 ];
 
 const BRAND_FONTS = [
-  { id: 'Inter', label: 'Inter', css: "'Inter', sans-serif" },
+  { id: 'Saira', label: 'Saira', css: "'Saira', sans-serif" },
   { id: 'Playfair Display', label: 'Playfair Display', css: "'Playfair Display', serif" },
   { id: 'Roboto', label: 'Roboto', css: "'Roboto', sans-serif" },
   { id: 'Montserrat', label: 'Montserrat', css: "'Montserrat', sans-serif" },
@@ -107,7 +107,7 @@ export default function EditorPage() {
   const logoRef = useRef<HTMLDivElement>(null);
 
   // ── Brand font ─────────────────────────────────────────────────────────────
-  const [brandFont, setBrandFont] = useState('Inter');
+  const [brandFont, setBrandFont] = useState('Saira');
   useEffect(() => {
     const load = () => {
       const id = localStorage.getItem('ai_marketing_active_company_id');
@@ -128,7 +128,7 @@ export default function EditorPage() {
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const textDragRef = useRef<{ id: string; startX: number; startY: number; startPx: number; startPy: number } | null>(null);
   const selectedLayer = textLayers.find(l => l.id === selectedTextId) ?? null;
-  const getBrandFontCss = (id: string) => BRAND_FONTS.find(f => f.id === id)?.css ?? "'Inter', sans-serif";
+  const getBrandFontCss = (id: string) => BRAND_FONTS.find(f => f.id === id)?.css ?? "'Saira', sans-serif";
 
   const addTextLayer = useCallback(() => {
     const id = `txt-${Date.now()}`;
@@ -1135,7 +1135,7 @@ export default function EditorPage() {
                   {platforms.map(p => {
                     const Icon = p.icon; const s = platformStatuses[p.id]; const isActive = activePlatform === p.id;
                     return (
-                      <button key={p.id} id={`tab-${p.id}`} onClick={() => setActivePlatform(p.id)} style={{ flex: 1, padding: '10px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: isActive ? `rgba(${p.id === 'facebook' ? '24,119,242' : p.id === 'instagram' ? '225,48,108' : p.id === 'x' ? '255,255,255' : '10,102,194'},0.12)` : 'transparent', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', position: 'relative', boxShadow: isActive ? `inset 0 -2px 0 ${p.color}` : 'none', fontFamily: "'Inter', sans-serif" }}>
+                      <button key={p.id} id={`tab-${p.id}`} onClick={() => setActivePlatform(p.id)} style={{ flex: 1, padding: '10px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: isActive ? `rgba(${p.id === 'facebook' ? '24,119,242' : p.id === 'instagram' ? '225,48,108' : p.id === 'x' ? '255,255,255' : '10,102,194'},0.12)` : 'transparent', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', position: 'relative', boxShadow: isActive ? `inset 0 -2px 0 ${p.color}` : 'none', fontFamily: "'Saira', sans-serif" }}>
                         <Icon size={16} color={isActive ? p.color : 'var(--text-secondary)'} style={{ opacity: enabledPlatforms[p.id] ? 1 : 0.35 }} />
                         <span style={{ fontSize: '10px', fontWeight: 600, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: enabledPlatforms[p.id] ? 1 : 0.35 }}>{p.label.split(' ')[0]}</span>
                         <span style={{ fontSize: '9px', fontWeight: 500, color: isActive ? p.color : 'var(--text-muted)', opacity: enabledPlatforms[p.id] ? 0.85 : 0.35 }}>({p.aspectRatio})</span>

@@ -65,7 +65,7 @@ export default function Sidebar() {
               id: Date.now().toString(),
               name: data.name || 'Default Company',
               context: data.context || '',
-              font: data.font || 'Inter',
+              font: data.font || 'Saira',
               colors: Array.isArray(data.color) ? data.color : (data.color ? [data.color] : ['#7c3aed']),
               logo: storedLogo || null
             };
@@ -133,7 +133,7 @@ export default function Sidebar() {
             )}
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+            <div style={{ fontFamily: "'Saira', sans-serif", fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
               {displayName ? displayName : 'AI Marketing'}
             </div>
             <div style={{ fontSize: '10px', color: 'var(--accent-violet)', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
@@ -185,7 +185,7 @@ export default function Sidebar() {
                 id: Date.now().toString(),
                 name: '',
                 context: '',
-                font: 'Inter',
+                font: 'Saira',
                 colors: ['#7c3aed'],
                 logo: null
               };

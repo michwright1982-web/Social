@@ -92,7 +92,7 @@ export default function Dashboard() {
                         <Icon size={18} color={stat.color} />
                       </div>
                     </div>
-                    <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif", letterSpacing: '-1px' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', fontFamily: "'Saira', sans-serif", letterSpacing: '-1px' }}>
                       {value > 0 ? value : '—'}
                     </div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 500 }}>{stat.label}</div>
