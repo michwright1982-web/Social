@@ -594,9 +594,8 @@ function VaultContent() {
                             style={{ overflow: 'hidden' }}
                           >
                             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(124,58,237,0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between' }}>
-                                Configure {platform.label} Integration
-                                <Link href={`/setup-guide?platform=${platform.id}`} style={{ color: '#06b6d4', textDecoration: 'none', fontWeight: 500 }}>Setup Guide ↗</Link>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                Configure {platform.label} Settings
                               </div>
                               {(platform.id === 'facebook' || platform.id === 'linkedin') && (
                                 <input 

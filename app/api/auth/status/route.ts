@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decryptToken } from '@/lib/oauth-token';
 
+export const dynamic = 'force-dynamic';
+
 interface TokenPayload {
   access_token:  string;
   handle:        string;
