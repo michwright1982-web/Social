@@ -25,6 +25,9 @@ export default function Starfield() {
     window.addEventListener('resize', setCanvasSize);
 
     let mouse = { x: -1000, y: -1000 };
+    let idleFrames = 0;
+    let idleAlpha = 0;
+
     const numTailPoints = 15;
     const maxTailLength = 100;
     const maxSegmentLength = maxTailLength / numTailPoints;
@@ -33,12 +36,26 @@ export default function Starfield() {
     const handleMouseMove = (e: MouseEvent) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
+      idleFrames = 0;
     };
     const handleMouseLeave = () => {
       mouse.x = -1000;
       mouse.y = -1000;
     };
+    
+    let clickStars: { x: number; y: number; alpha: number; scale: number; angle: number }[] = [];
+    const handleMouseClick = (e: MouseEvent) => {
+      clickStars.push({
+        x: e.clientX,
+        y: e.clientY,
+        alpha: 1,
+        scale: 0.5,
+        angle: Math.random() * Math.PI * 2
+      });
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('click', handleMouseClick);
     document.addEventListener('mouseleave', handleMouseLeave);
 
     const stars: { x: number; y: number; size: number; alpha: number; speed: number; vx: number; vy: number }[] = [];
@@ -59,22 +76,31 @@ export default function Starfield() {
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
 
+      idleFrames++;
+      if (idleFrames > 15) {
+        idleAlpha -= 0.04;
+      } else {
+        idleAlpha += 0.15;
+      }
+      if (idleAlpha > 1) idleAlpha = 1;
+      if (idleAlpha < 0) idleAlpha = 0;
+
       const mouseRadius = 150;
       const repulsionForce = 0.5;
       const friction = 0.92;
 
       // Draw background stars
       stars.forEach((star) => {
-        // Mouse repulsion
-        if (mouse.x !== -1000) {
+        // Mouse repulsion - smoothly fades out when mouse rests
+        if (mouse.x !== -1000 && idleAlpha > 0.01) {
           const dx = mouse.x - star.x;
           const dy = mouse.y - star.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < mouseRadius) {
             const force = (mouseRadius - dist) / mouseRadius;
-            star.vx -= (dx / dist) * force * repulsionForce;
-            star.vy -= (dy / dist) * force * repulsionForce;
+            star.vx -= (dx / dist) * force * repulsionForce * idleAlpha;
+            star.vy -= (dy / dist) * force * repulsionForce * idleAlpha;
           }
         }
 
@@ -111,6 +137,64 @@ export default function Starfield() {
         ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
         ctx.fill();
       });
+
+      // Draw click stars
+      const drawStarShape = (cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number) => {
+        let rot = Math.PI / 2 * 3;
+        let x = cx;
+        let y = cy;
+        let step = Math.PI / spikes;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - outerRadius);
+        for (let i = 0; i < spikes; i++) {
+          x = cx + Math.cos(rot) * outerRadius;
+          y = cy + Math.sin(rot) * outerRadius;
+          ctx.lineTo(x, y);
+          rot += step;
+
+          x = cx + Math.cos(rot) * innerRadius;
+          y = cy + Math.sin(rot) * innerRadius;
+          ctx.lineTo(x, y);
+          rot += step;
+        }
+        ctx.lineTo(cx, cy - outerRadius);
+        ctx.closePath();
+      };
+
+      for (let i = clickStars.length - 1; i >= 0; i--) {
+        const cs = clickStars[i];
+        cs.alpha -= 0.035; // slightly faster fade
+        cs.scale += 0.02;  // much slower growth so it stays small
+        cs.angle += 0.02;
+        
+        if (cs.alpha <= 0) {
+          clickStars.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.translate(cs.x, cs.y);
+          ctx.rotate(cs.angle);
+          ctx.scale(cs.scale, cs.scale);
+          ctx.globalAlpha = cs.alpha;
+          
+          const outR = 24;
+          const inR = 5;
+          drawStarShape(0, 0, 4, outR, inR); // 4-point sparkle
+          
+          // Radial gradient to make the edges fade out perfectly
+          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, outR);
+          grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+          grad.addColorStop(0.3, 'rgba(167, 139, 250, 0.8)');
+          grad.addColorStop(1, 'rgba(167, 139, 250, 0)');
+          
+          ctx.fillStyle = grad;
+          ctx.shadowColor = '#a78bfa';
+          ctx.shadowBlur = 15;
+          ctx.fill();
+          
+          ctx.restore();
+        }
+      }
 
       // Physics-based tail update (constrains max length to 50px)
       if (mouse.x !== -1000) {
@@ -151,7 +235,10 @@ export default function Starfield() {
         }
       }
 
-      if (isVisible) {
+      if (isVisible && idleAlpha > 0.01) {
+        ctx.save();
+        ctx.globalAlpha = idleAlpha;
+        
         const validPoints = tailPoints.filter(p => p.x !== -1000);
         
         let totalDist = 0;
@@ -250,6 +337,8 @@ export default function Starfield() {
           ctx.fillStyle = 'rgba(255, 255, 255, 1)';
           ctx.fill();
         }
+        
+        ctx.restore();
       }
 
       animationFrameId = requestAnimationFrame(draw);
@@ -260,6 +349,7 @@ export default function Starfield() {
     return () => {
       window.removeEventListener('resize', setCanvasSize);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('click', handleMouseClick);
       document.removeEventListener('mouseleave', handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
     };
