@@ -53,24 +53,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // --- Override Facebook status using oauth_app_creds ---
-  const credsCookieName = `oauth_app_creds_${companyId}`;
-  const credsCookie = req.cookies.get(credsCookieName)?.value;
-  if (credsCookie) {
-    try {
-      const decryptedCreds = await decryptToken(credsCookie);
-      const creds = JSON.parse(decryptedCreds);
-      if (creds.facebook && creds.facebook.clientId && creds.facebook.clientSecret) {
-        result.facebook = {
-          connected: true,
-          handle: creds.facebook.clientId, // Page ID
-          connected_at: Date.now()
-        };
-      }
-    } catch (e) {
-      // ignore parsing errors
-    }
-  }
 
   return NextResponse.json(result, {
     headers: { 'Cache-Control': 'no-store' },

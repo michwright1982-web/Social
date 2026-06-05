@@ -167,8 +167,17 @@ function VaultContent() {
       });
       if (res.ok) {
         setSocialStatuses(prev => ({ ...prev, [platformId]: { connected: false } }));
+        
+        // Clear saved settings (Organization ID / Page ID) from the vault
+        await fetch(`/api/auth/credentials?companyId=${companyId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [platformId]: { pageId: '' } })
+        });
+        await loadInitialData();
+
         const label = SOCIAL_PLATFORMS.find(p => p.id === platformId)?.label ?? platformId;
-        showToast(`${label} disconnected.`, 'success');
+        showToast(`${label} disconnected & settings wiped.`, 'success');
       } else {
         showToast('Disconnect failed. Please try again.', 'error');
       }

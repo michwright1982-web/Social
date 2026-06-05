@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     client_id:     clientId,
     redirect_uri:  redirectUri,
     state,
+    auth_type:     'reauthenticate',
     scope: [
       'pages_show_list',
       'pages_manage_posts',
