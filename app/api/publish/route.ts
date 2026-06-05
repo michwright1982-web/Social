@@ -87,7 +87,7 @@ async function publishSinglePhoto(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { platform, caption = '' } = body;
+    const { platform, caption = '', companyId = 'default' } = body;
 
     // Accept both `images[]` (multi) and legacy `imageBase64` (single)
     const images: string[] = Array.isArray(body.images) && body.images.length > 0
@@ -189,6 +189,103 @@ export async function POST(req: NextRequest) {
           method: 'individual_fallback',
         });
       }
+    }
+
+    // ── LinkedIn ──────────────────────────────────────────────────────────────
+    if (platform === 'linkedin') {
+      const liCookie = req.cookies.get(`oauth_li_${companyId}`)?.value;
+      if (!liCookie) {
+        return NextResponse.json(
+          { error: 'Not connected to LinkedIn. Please connect your account in the Vault.' },
+          { status: 401 }
+        );
+      }
+
+      const { access_token } = JSON.parse(await decryptToken(liCookie));
+
+      // 1. Get User URN
+      const meRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      if (!meRes.ok) throw new Error('Failed to fetch LinkedIn profile');
+      const { sub } = await meRes.json();
+      const authorUrn = `urn:li:person:${sub}`;
+
+      // We only support single image for LinkedIn in this basic implementation
+      const imageBase64 = images[0];
+
+      // 2. Register Upload
+      const registerRes = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registerUploadRequest: {
+            recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
+            owner: authorUrn,
+            serviceRelationships: [
+              { relationshipType: 'OWNER', identifier: 'urn:li:userGeneratedContent' }
+            ]
+          }
+        }),
+      });
+      if (!registerRes.ok) {
+        const errorText = await registerRes.text();
+        throw new Error(`LinkedIn register upload failed: ${errorText}`);
+      }
+      const registerData = await registerRes.json();
+      const uploadUrl = registerData.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
+      const assetUrn = registerData.value.asset;
+
+      // 3. Upload Image
+      const imageBlob = imageToBlob(imageBase64);
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: imageBlob,
+      });
+      if (!uploadRes.ok) {
+        throw new Error('LinkedIn image upload failed');
+      }
+
+      // 4. Create Post
+      const postRes = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'X-Restli-Protocol-Version': '2.0.0',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          author: authorUrn,
+          lifecycleState: 'PUBLISHED',
+          specificContent: {
+            'com.linkedin.ugc.ShareContent': {
+              shareCommentary: { text: caption },
+              shareMediaCategory: 'IMAGE',
+              media: [
+                {
+                  status: 'READY',
+                  description: { text: 'Image' },
+                  media: assetUrn,
+                }
+              ]
+            }
+          },
+          visibility: {
+            'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+          }
+        }),
+      });
+
+      if (!postRes.ok) {
+        const errorText = await postRes.text();
+        throw new Error(`LinkedIn post creation failed: ${errorText}`);
+      }
+
+      const postData = await postRes.json();
+      return NextResponse.json({ success: true, postId: postData.id });
     }
 
     // ── Other platforms ───────────────────────────────────────────────────────

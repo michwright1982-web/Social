@@ -585,7 +585,8 @@ export default function EditorPage() {
       if (!enabledPlatforms[p.id]) continue;
       setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'publishing' } }));
       try {
-        const res = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: p.id, images: composed, caption: captions[p.id] || '' }) });
+        const companyId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
+        const res = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: p.id, images: composed, caption: captions[p.id] || '', companyId }) });
         if (!res.ok) { const t = await res.text(); let m = t.substring(0, 50); try { m = JSON.parse(t).error || m; } catch { } setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: 'error', message: `Error ${res.status}: ${m}` } })); continue; }
         const d = await res.json();
         setPlatformStatuses(prev => ({ ...prev, [p.id]: { status: d.success ? 'success' : 'error', message: d.success ? undefined : d.error || 'Failed' } }));
