@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
+import { oauthPopupResponse } from '@/lib/oauth-popup';
 
 /**
  * GET /api/auth/facebook/callback
@@ -16,9 +17,7 @@ export async function GET(req: NextRequest) {
 
   // ── User denied access ────────────────────────────────────────────────────
   if (error) {
-    return NextResponse.redirect(
-      `${appUrl}/vault?error=facebook_denied`,
-    );
+    return oauthPopupResponse({ error: 'facebook_denied' });
   }
 
   // ── CSRF check & Recovery ──────────────────────────────────────────────────
@@ -37,20 +36,18 @@ export async function GET(req: NextRequest) {
   }
 
   if (!state || state !== storedState) {
-    return NextResponse.redirect(
-      `${appUrl}/vault?error=facebook_state_mismatch`,
-    );
+    return oauthPopupResponse({ error: 'facebook_state_mismatch' });
   }
 
   if (!code) {
-    return NextResponse.redirect(`${appUrl}/vault?error=facebook_no_code`);
+    return oauthPopupResponse({ error: 'facebook_no_code' });
   }
 
   // ── Exchange code → access token ──────────────────────────────────────────
   const { clientId, clientSecret } = await getAppCredentials(req, 'facebook', companyId);
   if (!clientId || !clientSecret) {
     console.error('[facebook/callback] Missing client ID or secret in config');
-    return NextResponse.redirect(new URL('/vault?error=facebook_token_failed', req.url));
+    return oauthPopupResponse({ error: 'facebook_token_failed' });
   }
   const redirectUri  = `${appUrl}/api/auth/facebook/callback`;
 
@@ -66,7 +63,7 @@ export async function GET(req: NextRequest) {
 
   if (!tokenRes.ok) {
     console.error('[Facebook OAuth] Token exchange failed:', await tokenRes.text());
-    return NextResponse.redirect(`${appUrl}/vault?error=facebook_token_failed`);
+    return oauthPopupResponse({ error: 'facebook_token_failed' });
   }
 
   const { access_token } = (await tokenRes.json()) as { access_token: string };
@@ -83,7 +80,7 @@ export async function GET(req: NextRequest) {
   const payload  = JSON.stringify({ access_token, handle, connected_at: Date.now() });
   const encrypted = await encryptToken(payload);
 
-  const response = NextResponse.redirect(`${appUrl}/vault?connected=facebook`);
+  const response = oauthPopupResponse({ connected: 'facebook' });
   response.cookies.set(`oauth_fb_${companyId}`, encrypted, COOKIE_OPTIONS);
   response.cookies.delete('oauth_state_fb');
   return response;

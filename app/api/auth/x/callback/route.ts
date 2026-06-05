@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encryptToken, decryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
+import { oauthPopupResponse } from '@/lib/oauth-popup';
 
 /**
  * GET /api/auth/x/callback
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   // ── User denied access ────────────────────────────────────────────────────
   if (error) {
-    return NextResponse.redirect(`${appUrl}/vault?error=x_denied`);
+    return oauthPopupResponse({ error: 'x_denied' });
   }
 
   // ── CSRF check & Recovery ──────────────────────────────────────────────────
@@ -35,27 +36,31 @@ export async function GET(req: NextRequest) {
   }
 
   if (!state || state !== storedState) {
-    return NextResponse.redirect(`${appUrl}/vault?error=x_state_mismatch`);
+    return oauthPopupResponse({ error: 'x_state_mismatch' });
+  }
+
+  if (!code) {
+    return oauthPopupResponse({ error: 'x_missing_params' });
   }
 
   // ── Retrieve PKCE verifier ────────────────────────────────────────────────
-  const encryptedVerifier = req.cookies.get('oauth_pkce_x')?.value;
-  if (!encryptedVerifier || !code) {
-    return NextResponse.redirect(`${appUrl}/vault?error=x_missing_params`);
-  }
-
-  let codeVerifier: string;
-  try {
-    codeVerifier = await decryptToken(encryptedVerifier);
-  } catch {
-    return NextResponse.redirect(`${appUrl}/vault?error=x_pkce_decrypt`);
+  const codeVerifierEncrypted = req.cookies.get('oauth_pkce_x')?.value;
+  let codeVerifier = '';
+  if (codeVerifierEncrypted) {
+    try {
+      codeVerifier = await decryptToken(codeVerifierEncrypted);
+    } catch {
+      return oauthPopupResponse({ error: 'x_pkce_decrypt' });
+    }
+  } else {
+    return oauthPopupResponse({ error: 'x_missing_params' });
   }
 
   // ── Exchange code → access token ──────────────────────────────────────────
   const { clientId, clientSecret } = await getAppCredentials(req, 'x', companyId);
   if (!clientId || !clientSecret) {
     console.error('[x/callback] Missing client ID or secret in config');
-    return NextResponse.redirect(new URL('/vault?error=x_token_failed', req.url));
+    return oauthPopupResponse({ error: 'x_token_failed' });
   }
   const redirectUri  = `${appUrl}/api/auth/x/callback`;
 
@@ -77,7 +82,7 @@ export async function GET(req: NextRequest) {
 
   if (!tokenRes.ok) {
     console.error('[X OAuth] Token exchange failed:', await tokenRes.text());
-    return NextResponse.redirect(`${appUrl}/vault?error=x_token_failed`);
+    return oauthPopupResponse({ error: 'x_token_failed' });
   }
 
   const { access_token } = (await tokenRes.json()) as { access_token: string };
@@ -96,7 +101,7 @@ export async function GET(req: NextRequest) {
   const payload  = JSON.stringify({ access_token, handle, connected_at: Date.now() });
   const encrypted = await encryptToken(payload);
 
-  const response = NextResponse.redirect(`${appUrl}/vault?connected=x`);
+  const response = oauthPopupResponse({ connected: 'x' });
   response.cookies.set(`oauth_x_${companyId}`, encrypted, COOKIE_OPTIONS);
   response.cookies.delete('oauth_state_x');
   response.cookies.delete('oauth_pkce_x');
