@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     client_id:     clientId,
     redirect_uri:  redirectUri,
     state,
-    scope:         'openid profile w_member_social w_organization_social',
+    scope:         'openid profile w_member_social',
   });
 
   const response = NextResponse.redirect(

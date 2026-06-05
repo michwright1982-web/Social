@@ -8,11 +8,11 @@ import Topbar from '@/components/Topbar';
 import {
   KeyRound, Eye, EyeOff, Plus, Trash2, CheckCircle2,
   AlertCircle, Lock, Shield,
-  Zap, ExternalLink, RefreshCw, Copy, Check,
-  Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings, Target,
+  Zap, ExternalLink, RefreshCw,
+  Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings,
   X, Upload,
 } from 'lucide-react';
-import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
+import { FacebookIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -69,7 +69,8 @@ function VaultContent() {
   const [newLabel, setNewLabel]       = useState('');
   const [copiedId, setCopiedId]       = useState<string | null>(null);
   const [testingId, setTestingId]     = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, { valid: boolean; message: string }>>({});
+  
+  const [activeCompanyId, setActiveCompanyId] = useState('default');
 
   // ── Social OAuth state ─────────────────────────────────────────────────────
   const [socialStatuses, setSocialStatuses] = useState<SocialStatuses>({});
@@ -77,9 +78,9 @@ function VaultContent() {
   const [disconnecting, setDisconnecting]   = useState<string | null>(null);
 
   // ── Developer App Creds state ──────────────────────────────────────────────
-  const [oauthCreds, setOauthCreds] = useState<Record<string, { clientId: string; isSecretSet: boolean; pageId?: string }>>({});
+  const [oauthCreds, setOauthCreds] = useState<Record<string, { pageId?: string }>>({});
   const [editingCredsPlatform, setEditingCredsPlatform] = useState<string | null>(null);
-  const [credsForm, setCredsForm] = useState({ clientId: '', clientSecret: '', pageId: '' });
+  const [credsForm, setCredsForm] = useState({ pageId: '' });
   const [savingCreds, setSavingCreds] = useState(false);
 
 
@@ -115,7 +116,8 @@ function VaultContent() {
   }, [showToast]);
 
   useEffect(() => {
-    loadInitialData();
+    setActiveCompanyId(localStorage.getItem('ai_marketing_active_company_id') || 'default');
+    setTimeout(() => loadInitialData(), 0);
     window.addEventListener('brand-updated', loadInitialData);
     return () => window.removeEventListener('brand-updated', loadInitialData);
   }, [loadInitialData]);
@@ -126,9 +128,11 @@ function VaultContent() {
     const error     = searchParams.get('error');
 
     if (connected) {
-      const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
-      showToast(`✓ ${label} connected successfully!`, 'success');
-      loadInitialData();
+      setTimeout(() => {
+        const label = SOCIAL_PLATFORMS.find(p => p.id === connected)?.label ?? connected;
+        showToast(`✓ ${label} connected successfully!`, 'success');
+        loadInitialData();
+      }, 0);
       // Clean URL without re-render
       window.history.replaceState({}, '', '/vault');
     }
@@ -295,7 +299,7 @@ function VaultContent() {
       await fetch(`/api/auth/credentials?companyId=${companyId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [platformId]: { clientId: '', clientSecret: '', pageId: '' } })
+        body: JSON.stringify({ [platformId]: { pageId: '' } })
       });
       await loadInitialData();
       showToast('Credentials cleared', 'success');
@@ -510,8 +514,6 @@ function VaultContent() {
                   const isLoading  = statusLoading;
                   const isDisconnecting = disconnecting === platform.id;
                   const creds      = oauthCreds[platform.id];
-                  const hasCreds   = !!creds?.clientId;
-
                   return (
                     <motion.div
                       key={platform.id}
@@ -529,7 +531,6 @@ function VaultContent() {
                           <div>
                             <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {platform.label}
-                              {hasCreds && <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', color: '#34d399', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>App Configured</span>}
                             </div>
                             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                               {isLoading ? (
@@ -546,7 +547,7 @@ function VaultContent() {
                                   )}
                                 </span>
                               ) : (
-                                hasCreds ? 'Ready to connect' : 'Requires Developer App credentials'
+                                'Ready to connect'
                               )}
                             </div>
                           </div>
@@ -563,7 +564,7 @@ function VaultContent() {
                           ) : (
                             <span className="badge" style={{ background: 'rgba(71,85,105,0.2)', color: '#64748b', border: '1px solid rgba(71,85,105,0.3)' }}>Not Connected</span>
                           )}
-                          {hasCreds && (
+                          {(platform.id === 'facebook' || platform.id === 'linkedin') && status.connected && (
                             <button 
                               className="btn-ghost" 
                               style={{ padding: '6px' }}
@@ -572,7 +573,7 @@ function VaultContent() {
                                   setEditingCredsPlatform(null);
                                 } else {
                                   setEditingCredsPlatform(platform.id);
-                                  setCredsForm({ clientId: creds?.clientId || '', clientSecret: '', pageId: creds?.pageId || '' });
+                                  setCredsForm({ pageId: creds?.pageId || '' });
                                 }
                               }}
                             >
@@ -596,61 +597,21 @@ function VaultContent() {
                                 Configure {platform.label} Integration
                                 <Link href={`/setup-guide?platform=${platform.id}`} style={{ color: '#06b6d4', textDecoration: 'none', fontWeight: 500 }}>Setup Guide ↗</Link>
                               </div>
-                              <input 
-                                className="input-field" 
-                                placeholder={platform.id === 'facebook' ? 'Facebook Page ID' : 'Client ID (App ID)'} 
-                                value={credsForm.clientId}
-                                onChange={e => setCredsForm(prev => ({ ...prev, clientId: e.target.value }))}
-                                style={{ fontSize: '13px', fontFamily: 'monospace' }} 
-                              />
-                              <input 
-                                className="input-field" 
-                                type="password" 
-                                placeholder={creds?.isSecretSet ? (platform.id === 'facebook' ? "Page Access Token (•••••••• saved)" : "Client Secret (•••••••• saved)") : (platform.id === 'facebook' ? "Graph API Page Access Token" : "Client Secret")} 
-                                value={credsForm.clientSecret}
-                                onChange={e => setCredsForm(prev => ({ ...prev, clientSecret: e.target.value }))}
-                                style={{ fontSize: '13px', fontFamily: 'monospace' }} 
-                              />
-                              {platform.id === 'linkedin' && (
+                              {(platform.id === 'facebook' || platform.id === 'linkedin') && (
                                 <input 
                                   className="input-field" 
-                                  placeholder="Organization ID (e.g. 1234567) - Leave blank for personal profile" 
+                                  placeholder={platform.id === 'facebook' ? "Facebook Page ID" : "Organization ID (e.g. 1234567) - Leave blank for personal profile"} 
                                   value={credsForm.pageId}
                                   onChange={e => setCredsForm(prev => ({ ...prev, pageId: e.target.value }))}
                                   style={{ fontSize: '13px', fontFamily: 'monospace' }} 
                                 />
                               )}
                               
-                              {platform.id !== 'facebook' && (
-                                <div style={{ marginTop: '4px', padding: '10px 12px', background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '8px' }}>
-                                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Authorized Redirect URI:</div>
-                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: 1.4 }}>
-                                    Copy and paste this exact URL into your {platform.label} Developer Console.
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', borderRadius: '6px', padding: '6px 10px', border: '1px solid var(--input-border)' }}>
-                                    <code style={{ flex: 1, fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {typeof window !== 'undefined' ? `${window.location.origin}/api/auth/${platform.id}/callback` : ''}
-                                    </code>
-                                    <button 
-                                      onClick={() => {
-                                        const uri = `${window.location.origin}/api/auth/${platform.id}/callback`;
-                                        navigator.clipboard.writeText(uri);
-                                        setCopiedId(`uri-${platform.id}`);
-                                        setTimeout(() => setCopiedId(null), 2000);
-                                      }} 
-                                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
-                                      title="Copy Redirect URI"
-                                    >
-                                      {copiedId === `uri-${platform.id}` ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button className="btn-primary" style={{ flex: 1, padding: '8px', fontSize: '12px', justifyContent: 'center' }} onClick={handleSaveCreds} disabled={savingCreds}>
-                                  {savingCreds ? <Loader2 size={12} className="spin-slow" /> : <Lock size={12} />} Save Credentials
+                                  {savingCreds ? <Loader2 size={12} className="spin-slow" /> : <Lock size={12} />} Save Settings
                                 </button>
-                                {hasCreds && (
+                                {creds?.pageId && (
                                   <button className="btn-ghost" style={{ padding: '8px 12px', fontSize: '12px', color: '#f87171' }} onClick={() => { setEditingCredsPlatform(null); handleClearCreds(platform.id); }}>
                                     Clear
                                   </button>
@@ -663,26 +624,7 @@ function VaultContent() {
 
                       {/* Action buttons */}
                       <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
-                        {!hasCreds ? (
-                          <button 
-                            className="btn-primary" 
-                            style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '8px' }}
-                            onClick={() => {
-                              if (editingCredsPlatform === platform.id) {
-                                setEditingCredsPlatform(null);
-                              } else {
-                                setEditingCredsPlatform(platform.id);
-                                setCredsForm({ clientId: '', clientSecret: '', pageId: '' });
-                              }
-                            }}
-                          >
-                            <Settings size={11} /> {platform.id === 'facebook' ? 'Configure Integration' : 'Configure App'}
-                          </button>
-                        ) : platform.id === 'facebook' ? (
-                          <div style={{ width: '100%', padding: '8px', fontSize: '12px', textAlign: 'center', color: '#10b981', background: 'rgba(16,185,129,0.1)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                            <Check size={14} /> Ready to Publish
-                          </div>
-                        ) : status.connected ? (
+                        {status.connected ? (
                           <button
                             onClick={() => handleDisconnect(platform.id)}
                             disabled={isDisconnecting}
@@ -694,9 +636,8 @@ function VaultContent() {
                             {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
                           </button>
                         ) : (
-                          /* Full-page redirect — no JS fetch needed */
                           <a
-                            href={`/api/auth/${platform.id}/connect?companyId=${typeof window !== 'undefined' ? (localStorage.getItem('ai_marketing_active_company_id') || 'default') : 'default'}`}
+                            href={`/api/auth/${platform.id}/connect?companyId=${activeCompanyId}`}
                             style={{ flex: 1, textDecoration: 'none' }}
                             id={`connect-${platform.id}`}
                           >

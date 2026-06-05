@@ -86,30 +86,11 @@ export const COOKIE_OPTIONS = {
 
 // ── App Credentials Helper ───────────────────────────────────────────────────
 
-/** Reads configured OAuth Client ID & Secret from the encrypted cookie for a specific company */
+/** Reads configured OAuth Client ID & Secret from global environment variables (SaaS mode) */
 export async function getAppCredentials(req: import('next/server').NextRequest, platform: string, companyId: string) {
-  const cookieName = `oauth_app_creds_${companyId}`;
-  const rawCookie = req.cookies.get(cookieName)?.value;
-  let clientId = '';
-  let clientSecret = '';
-
-  if (rawCookie) {
-    try {
-      const decrypted = await decryptToken(rawCookie);
-      const creds = JSON.parse(decrypted) as Record<string, { clientId: string; clientSecret: string }>;
-      if (creds[platform]) {
-        clientId = creds[platform].clientId;
-        clientSecret = creds[platform].clientSecret;
-      }
-    } catch {
-      // Ignore decryption errors
-    }
-  }
-
-  // Fallback to process.env if not configured in UI
   const envPrefix = platform === 'x' ? 'X' : platform.toUpperCase();
   return {
-    clientId: clientId || process.env[`${envPrefix}_CLIENT_ID`] || '',
-    clientSecret: clientSecret || process.env[`${envPrefix}_CLIENT_SECRET`] || '',
+    clientId: process.env[`${envPrefix}_CLIENT_ID`] || '',
+    clientSecret: process.env[`${envPrefix}_CLIENT_SECRET`] || '',
   };
 }

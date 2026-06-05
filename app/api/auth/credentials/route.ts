@@ -5,8 +5,6 @@ const OAUTH_CREDS_COOKIE_PREFIX = 'oauth_app_creds_';
 
 export type OAuthAppCredentials = {
   [platform: string]: {
-    clientId: string;
-    clientSecret: string;
     pageId?: string;
   };
 };
@@ -27,18 +25,15 @@ export async function GET(req: NextRequest) {
     const decrypted = await decryptToken(rawCookie);
     const creds = JSON.parse(decrypted) as OAuthAppCredentials;
     
-    // For GET requests, we shouldn't send back full secrets to the client.
-    // Instead we mask them so the UI knows they are set, but they aren't exposed.
-    const maskedCreds: Record<string, { clientId: string; isSecretSet: boolean; pageId?: string }> = {};
+    // We only return the pageId preferences
+    const publicCreds: Record<string, { pageId?: string }> = {};
     for (const [platform, config] of Object.entries(creds)) {
-      maskedCreds[platform] = {
-        clientId: config.clientId,
-        isSecretSet: !!config.clientSecret,
+      publicCreds[platform] = {
         pageId: config.pageId,
       };
     }
     
-    return NextResponse.json(maskedCreds);
+    return NextResponse.json(publicCreds);
   } catch (error) {
     console.error('Failed to parse OAuth creds from cookie:', error);
     return NextResponse.json({});
@@ -54,7 +49,7 @@ export async function POST(req: NextRequest) {
   const companyId = req.nextUrl.searchParams.get('companyId') || 'default';
   const cookieName = `${OAUTH_CREDS_COOKIE_PREFIX}${companyId}`;
 
-  let newCreds: Record<string, { clientId: string; clientSecret?: string; pageId?: string }> = {};
+  let newCreds: Record<string, { pageId?: string }> = {};
   try {
     newCreds = await req.json();
   } catch {
@@ -73,22 +68,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Merge them (preserve old secrets if the UI sends an empty secret for an existing app)
   const mergedCreds: OAuthAppCredentials = { ...existingCreds };
   
   for (const [platform, config] of Object.entries(newCreds)) {
-    // If the client explicitly sends an empty clientId, we can assume they are deleting the config
-    if (!config.clientId) {
+    // If the client explicitly sends an empty pageId, we can delete the config
+    if (!config.pageId) {
       delete mergedCreds[platform];
       continue;
     }
     
-    const oldSecret = existingCreds[platform]?.clientSecret;
     mergedCreds[platform] = {
-      clientId: config.clientId.trim(),
-      // Use new secret if provided, otherwise keep old secret
-      clientSecret: (config.clientSecret || oldSecret || '').trim(),
-      pageId: config.pageId?.trim() || existingCreds[platform]?.pageId || '',
+      pageId: config.pageId.trim(),
     };
   }
 
