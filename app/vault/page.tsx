@@ -407,8 +407,8 @@ function VaultContent() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <select className="input-field" style={{ fontSize: '13px' }} value={newProvider} onChange={e => setNewProvider(e.target.value)} id="new-provider-select">
                         <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Select Provider</option>
-                        {['Google AI Studio', 'OpenAI', 'Hugging Face', 'Stability AI', 'Midjourney'].map(p => (
-                          <option key={p} value={p} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{p}</option>
+                        {['Google AI Studio', 'OpenAI', 'Anthropic', 'Hugging Face', 'Stability AI', 'Midjourney'].map(p => (
+                          <option key={p} value={p} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{p === 'Anthropic' ? 'Anthropic (Claude)' : p}</option>
                         ))}
                       </select>
                       <input className="input-field" placeholder="Label (e.g. GPT-4o Production)" value={newLabel} onChange={e => setNewLabel(e.target.value)} style={{ fontSize: '13px' }} id="new-key-label" />
