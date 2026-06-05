@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { encryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
+import { encryptToken, getAppCredentials } from '@/lib/oauth-token';
 
 /**
  * GET /api/auth/x/connect

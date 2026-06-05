@@ -2,10 +2,9 @@
 
 import { Sparkles, ArrowRight, Wand2, PenLine, Target, KeyRound, PlayCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function LandingPage() {
-  const { scrollYProgress } = useScroll();
 
   return (
     <div style={{

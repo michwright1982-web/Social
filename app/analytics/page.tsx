@@ -6,7 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import {
   TrendingUp, Users, Eye, Heart,
-  ArrowUpRight, BarChart2, Calendar, LineChart,
+  BarChart2, Calendar, LineChart,
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 
@@ -26,6 +26,7 @@ const platforms = [
 
 export default function AnalyticsPage() {
   const [stats, setStats] = useState({ impressions: 0, reach: 0, engagement: 0, ctr: 0 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [platformStats, setPlatformStats] = useState<any[]>([]);
 
   useEffect(() => {

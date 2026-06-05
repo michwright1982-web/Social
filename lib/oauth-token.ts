@@ -87,7 +87,8 @@ export const COOKIE_OPTIONS = {
 // ── App Credentials Helper ───────────────────────────────────────────────────
 
 /** Reads configured OAuth Client ID & Secret from global environment variables (SaaS mode) */
-export async function getAppCredentials(req: import('next/server').NextRequest, platform: string, companyId: string) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getAppCredentials(_req: import('next/server').NextRequest, platform: string, _companyId: string) {
   const envPrefix = platform === 'x' ? 'X' : platform.toUpperCase();
   return {
     clientId: process.env[`${envPrefix}_CLIENT_ID`] || '',

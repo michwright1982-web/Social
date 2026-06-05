@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
   }
 
   const providers = Array.from(new Set(keys.map(k => k.provider)));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let dynamicModels: any[] = [];
 
   // Iterate through active providers and fetch their live models if supported
@@ -63,11 +64,13 @@ export async function GET(req: NextRequest) {
         if (res.ok) {
           const data = await res.json();
           // Filter only GPT Image generation models
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const gptImageModels = data.data.filter((m: any) => m.id.includes('gpt-image'));
           
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const mappedModels = gptImageModels.map((m: any) => {
-            let label = m.id === 'gpt-image-2' ? 'GPT Image 2' : m.id === 'gpt-image-1' ? 'GPT Image 1' : m.id;
-            let badge = m.id === 'gpt-image-2' ? 'Latest' : 'Legacy';
+            const label = m.id === 'gpt-image-2' ? 'GPT Image 2' : m.id === 'gpt-image-1' ? 'GPT Image 1' : m.id;
+            const badge = m.id === 'gpt-image-2' ? 'Latest' : 'Legacy';
             return {
               id: m.id,
               label: label,
@@ -93,11 +96,13 @@ export async function GET(req: NextRequest) {
         if (res.ok) {
           const data = await res.json();
           // Filter only Imagen image generation models
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const googleModels = (data.models || []).filter((m: any) => 
             m.name.includes('imagen') && 
             m.supportedGenerationMethods?.includes('predict')
           );
           
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const mappedModels = googleModels.map((m: any) => {
             const id = m.name.replace(/^models\//, '');
             let label = m.displayName || id;

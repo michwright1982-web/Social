@@ -24,7 +24,7 @@ export default function Starfield() {
     setCanvasSize();
     window.addEventListener('resize', setCanvasSize);
 
-    let mouse = { x: -1000, y: -1000 };
+    const mouse = { x: -1000, y: -1000 };
     let idleFrames = 0;
     let idleAlpha = 0;
 
@@ -43,7 +43,7 @@ export default function Starfield() {
       mouse.y = -1000;
     };
     
-    let clickStars: { x: number; y: number; alpha: number; scale: number; angle: number }[] = [];
+    const clickStars: { x: number; y: number; alpha: number; scale: number; angle: number }[] = [];
     const handleMouseClick = (e: MouseEvent) => {
       clickStars.push({
         x: e.clientX,
@@ -143,7 +143,7 @@ export default function Starfield() {
         let rot = Math.PI / 2 * 3;
         let x = cx;
         let y = cy;
-        let step = Math.PI / spikes;
+        const step = Math.PI / spikes;
 
         ctx.beginPath();
         ctx.moveTo(cx, cy - outerRadius);

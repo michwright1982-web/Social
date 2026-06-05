@@ -67,7 +67,9 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    loadDashboardData();
+    setTimeout(() => {
+      loadDashboardData();
+    }, 0);
     window.addEventListener('brand-updated', loadDashboardData);
     return () => window.removeEventListener('brand-updated', loadDashboardData);
   }, []);

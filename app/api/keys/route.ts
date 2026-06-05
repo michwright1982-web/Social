@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   let keys: ApiKey[] = [];
   try {
     keys = await req.json();
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -129,7 +130,6 @@ export default function StudioPage() {
   const [customStyleImage, setCustomStyleImage] = useState<string | null>(null);
   const [customStyles, setCustomStyles] = useState<StyleOption[]>([]);
   const [generatingStyleId, setGeneratingStyleId] = useState<string | null>(null);
-  const [errorGenerate, setErrorGenerate] = useState<string | null>(null);
 
   // Handle reference image upload for custom style
   const handleReferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,11 +147,11 @@ export default function StudioPage() {
   // Generate new custom style from reference image
   const handleGenerateStyle = async () => {
     if (!customStyleImage) {
-      setErrorGenerate('No reference image uploaded for the custom style.');
+      setErrorMsg('No reference image uploaded for the custom style.');
       return;
     }
     setGeneratingStyleId('custom-new');
-    setErrorGenerate(null);
+    setErrorMsg(null);
     try {
       const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
       const res = await fetch('/api/generate-style', {
@@ -169,7 +169,7 @@ export default function StudioPage() {
       });
       setCustomStyleImage(null); // Clear the image after successful generation
     } catch (err) {
-      setErrorGenerate((err as Error).message);
+      setErrorMsg((err as Error).message);
     } finally {
       setGeneratingStyleId(null);
     }
@@ -179,7 +179,8 @@ export default function StudioPage() {
     const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
 
     // Check if we need to migrate existing localStorage data to IndexedDB
-    let dbHistory = await loadFromImageDB(`creative_studio_history_${activeId}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let dbHistory = await loadFromImageDB(`creative_studio_history_${activeId}`) as any[];
     if (!dbHistory) {
       const oldHistory = localStorage.getItem(`creative_studio_history_${activeId}`) || localStorage.getItem('creative_studio_history');
       if (oldHistory) {
@@ -233,7 +234,7 @@ export default function StudioPage() {
     setGeneratedImages(sanitizedHistory);
 
     // Save sanitized history back to DB if it has been updated
-    if (dbHistory && dbHistory.length !== sanitizedHistory.length) {
+    if (Array.isArray(dbHistory) && dbHistory.length !== sanitizedHistory.length) {
       saveToImageDB(`creative_studio_history_${activeId}`, sanitizedHistory).catch(e => console.warn(e));
     }
 
@@ -287,8 +288,10 @@ export default function StudioPage() {
 
   // Run on mount and when brand updates
   useEffect(() => {
-    restoreSelection();
-    loadModels();
+    setTimeout(() => {
+      restoreSelection();
+      loadModels();
+    }, 0);
     const handleUpdate = () => { restoreSelection(); loadModels(); };
     window.addEventListener('brand-updated', handleUpdate);
     return () => window.removeEventListener('brand-updated', handleUpdate);

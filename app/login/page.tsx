@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, ArrowRight, Loader2, Shield, Circle, PlayCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Shield, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -28,8 +28,8 @@ export default function LoginPage() {
       }
 
       window.location.href = '/dashboard';
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
     } finally {
       setIsLoading(false);
     }

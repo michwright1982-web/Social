@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps, @next/next/no-img-element */
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -8,9 +9,9 @@ import Topbar from '@/components/Topbar';
 import {
   Send, Check, Copy, RefreshCw, Sparkles, AlertCircle, CheckCircle2,
   Loader2, Hash, AtSign, Clock, Zap, Globe, ImageIcon, Upload, X,
-  Crop, Eye, EyeOff, Type, Plus, Trash2, ChevronDown, ChevronLeft, ChevronRight, Square, MousePointer2, Circle, Triangle, Hexagon,
+  Crop, Eye, EyeOff, Type, Plus, Trash2, ChevronDown, Square, Circle, Triangle, Hexagon,
   AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd,
-  AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd
+  AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Link2
 } from 'lucide-react';
 import { loadFromImageDB, saveToImageDB } from '@/lib/image-db';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
@@ -70,6 +71,8 @@ export default function EditorPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [enabledPlatforms, setEnabledPlatforms] = useState<Record<string, boolean>>(Object.fromEntries(platforms.map(p => [p.id, true])));
+  const [connectedPlatforms, setConnectedPlatforms] = useState<Record<string, boolean>>({});
+  const [showConnectModal, setShowConnectModal] = useState<string | null>(null);
 
   // ── Auto-detect connected platforms ──────────────────────────────────────────
   useEffect(() => {
@@ -79,6 +82,8 @@ export default function EditorPage() {
         const res = await fetch(`/api/auth/status?companyId=${companyId}&_t=${Date.now()}`);
         if (res.ok) {
           const statuses = await res.json();
+          const nextConnected: Record<string, boolean> = {};
+          
           setEnabledPlatforms(prev => {
             const next = { ...prev };
             let firstConnected: string | null = null;
@@ -89,10 +94,13 @@ export default function EditorPage() {
               if (apiId === 'instagram') apiId = 'facebook';
               
               const isConnected = !!statuses[apiId]?.connected;
+              nextConnected[p.id] = isConnected;
               next[p.id] = isConnected;
               
               if (isConnected && !firstConnected) firstConnected = p.id;
             });
+            
+            setConnectedPlatforms(nextConnected);
             
             if (firstConnected) {
               setActivePlatform(firstConnected);
@@ -232,7 +240,7 @@ export default function EditorPage() {
     };
     const onUp = () => { textDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [activeImageIdx, textLayersMap, editingTextId]);
 
   // ── Shape interactions ─────────────────────────────────────────────────────
@@ -255,7 +263,7 @@ export default function EditorPage() {
     };
     const onUp = () => { shapeDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [activeImageIdx, shapeLayersMap]);
 
   const startShapeResize = useCallback((layerId: string, handle: string, e: React.MouseEvent) => {
@@ -301,14 +309,14 @@ export default function EditorPage() {
     };
     const onUp = () => { shapeResizeRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [activeImageIdx, shapeLayersMap]);
 
   // ── Load images & logo ─────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       const activeId = localStorage.getItem('ai_marketing_active_company_id') || 'default';
-      let db = await loadFromImageDB(`creative_studio_selected_images_${activeId}`);
+      let db = await loadFromImageDB(`creative_studio_selected_images_${activeId}`) as string[];
       if (!db?.length) {
         const raw = localStorage.getItem(`creative_studio_selected_images_${activeId}`) || sessionStorage.getItem(`creative_studio_selected_images_${activeId}`);
         if (raw) { try { db = JSON.parse(raw); } catch { db = [raw]; } }
@@ -389,7 +397,7 @@ export default function EditorPage() {
   const isCropping = activeTool === 'crop';
   useEffect(() => {
     if (activeCropRatio && isCropping) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setCropRect(prev => { const h = prev.w / activeCropRatio; if (prev.y + h <= 100) return { ...prev, h }; return { ...prev, w: prev.h * activeCropRatio }; });
     }
   }, [activeCropRatio, isCropping]);
@@ -1170,7 +1178,7 @@ export default function EditorPage() {
                         <Icon size={16} color={isActive ? p.color : 'var(--text-secondary)'} style={{ opacity: enabledPlatforms[p.id] ? 1 : 0.35 }} />
                         <span style={{ fontSize: '10px', fontWeight: 600, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: enabledPlatforms[p.id] ? 1 : 0.35 }}>{p.label.split(' ')[0]}</span>
                         <span style={{ fontSize: '9px', fontWeight: 500, color: isActive ? p.color : 'var(--text-muted)', opacity: enabledPlatforms[p.id] ? 0.85 : 0.35 }}>({p.aspectRatio})</span>
-                        {!enabledPlatforms[p.id] && <span style={{ position: 'absolute', top: 4, right: 4, fontSize: '7px', color: 'var(--text-muted)', fontWeight: 700, background: 'var(--bg-secondary)', padding: '1px 3px', borderRadius: '3px' }}>SKIP</span>}
+                        {!enabledPlatforms[p.id] && <span style={{ position: 'absolute', top: 4, right: 4, fontSize: '7px', color: 'var(--text-muted)', fontWeight: 700, background: 'var(--bg-secondary)', padding: '1px 3px', borderRadius: '3px' }}>{connectedPlatforms[p.id] === false ? 'NOT CONNECTED' : 'SKIP'}</span>}
                         {s?.status !== 'idle' && s?.status !== undefined && <span style={{ position: 'absolute', top: 4, left: 4 }}>{statusIcon(s.status)}</span>}
                       </button>
                     );
@@ -1192,7 +1200,14 @@ export default function EditorPage() {
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', background: 'var(--input-bg)', padding: '6px 12px', borderRadius: '9px', border: '1px solid var(--input-border)' }}>
                           <span style={{ fontSize: '11px', fontWeight: 700, color: enabledPlatforms[activePlatform] ? '#a78bfa' : 'var(--text-secondary)' }}>{enabledPlatforms[activePlatform] ? 'Post' : 'Skip'}</span>
-                          <div style={{ width: '34px', height: '18px', background: enabledPlatforms[activePlatform] ? '#7c3aed' : 'var(--bg-secondary)', borderRadius: '9px', position: 'relative', transition: '0.25s', cursor: 'pointer', flexShrink: 0 }} onClick={e => { e.preventDefault(); setEnabledPlatforms(prev => ({ ...prev, [activePlatform]: !prev[activePlatform] })); }}>
+                          <div style={{ width: '34px', height: '18px', background: enabledPlatforms[activePlatform] ? '#7c3aed' : 'var(--bg-secondary)', borderRadius: '9px', position: 'relative', transition: '0.25s', cursor: 'pointer', flexShrink: 0 }} onClick={e => { 
+                            e.preventDefault(); 
+                            if (connectedPlatforms[activePlatform] === false) {
+                              setShowConnectModal(activePlatform);
+                            } else {
+                              setEnabledPlatforms(prev => ({ ...prev, [activePlatform]: !prev[activePlatform] })); 
+                            }
+                          }}>
                             <div style={{ width: '14px', height: '14px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: enabledPlatforms[activePlatform] ? '18px' : '2px', transition: '0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }} />
                           </div>
                         </label>
@@ -1349,6 +1364,35 @@ export default function EditorPage() {
               </div>
               <div style={{ padding: '16px 24px', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'flex-end', background: 'var(--bg-card)' }}>
                 <button onClick={() => setShowStudioPicker(false)} className="btn-primary" style={{ padding: '8px 24px', fontSize: '13px', fontWeight: 600, borderRadius: '8px' }}>Done</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Connect Social Modal */}
+      <AnimatePresence>
+        {showConnectModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowConnectModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()} className="glass-card" style={{ width: '100%', maxWidth: '400px', overflow: 'hidden', boxShadow: '0 24px 48px rgba(0,0,0,0.4)' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)' }}>
+                <div style={{ fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link2 size={18} color="#7c3aed" /> Connect Social Account
+                </div>
+                <button onClick={() => setShowConnectModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}><X size={16} /></button>
+              </div>
+              <div style={{ padding: '24px', textAlign: 'center' }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '24px' }}>
+                  Your {platforms.find(p => p.id === showConnectModal)?.label} account is not connected yet. Please connect your account in the Secure Vault to turn on posting.
+                </div>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button onClick={() => setShowConnectModal(null)} className="btn-ghost" style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '13px' }}>Cancel</button>
+                  <Link href="/vault" style={{ textDecoration: 'none' }}>
+                    <button className="btn-primary" style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Link2 size={14} /> Go to Vault
+                    </button>
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </motion.div>

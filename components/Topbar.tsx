@@ -1,7 +1,7 @@
 'use client';
 
 import { Search, Plus } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 
 interface TopbarProps {

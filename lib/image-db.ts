@@ -6,15 +6,16 @@ const STORE_NAME = 'ImagesStore';
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = (e: any) => {
-      e.target.result.createObjectStore(STORE_NAME);
+    request.onupgradeneeded = (e: IDBVersionChangeEvent) => {
+      const target = e.target as IDBOpenDBRequest;
+      target.result.createObjectStore(STORE_NAME);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-export async function saveToImageDB(key: string, data: any): Promise<void> {
+export async function saveToImageDB<T>(key: string, data: T): Promise<void> {
   if (typeof window === 'undefined' || !window.indexedDB) return;
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -25,13 +26,13 @@ export async function saveToImageDB(key: string, data: any): Promise<void> {
   });
 }
 
-export async function loadFromImageDB(key: string): Promise<any> {
+export async function loadFromImageDB<T = unknown>(key: string): Promise<T | null> {
   if (typeof window === 'undefined' || !window.indexedDB) return null;
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get(key);
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => resolve(req.result as T);
     req.onerror = () => reject(req.error);
   });
 }

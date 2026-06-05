@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API keys configured. Please add an OpenAI key in the Secure Vault.' }, { status: 401 });
     }
 
-    let keys: any[] = [];
+    let keys: { provider: string; status: string; key: string }[] = [];
     let brandContext = '';
     
     try {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (brandCookie) {
       try {
         brandContext = await decryptToken(brandCookie);
-      } catch (err) {
+      } catch {
         console.warn('Failed to decrypt brand context cookie');
       }
     }

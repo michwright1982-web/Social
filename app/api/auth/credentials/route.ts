@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     try {
       const decrypted = await decryptToken(rawCookie);
       existingCreds = JSON.parse(decrypted) as OAuthAppCredentials;
-    } catch (e) {
+    } catch {
        // Ignore corrupt cookie
     }
   }

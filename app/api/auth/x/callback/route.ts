@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { encryptToken, decryptToken, COOKIE_OPTIONS, getAppCredentials } from '@/lib/oauth-token';
 import { oauthPopupResponse } from '@/lib/oauth-popup';
 

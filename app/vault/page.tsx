@@ -9,11 +9,9 @@ import {
   KeyRound, Eye, EyeOff, Plus, Trash2, CheckCircle2,
   AlertCircle, Lock, Shield,
   Zap, ExternalLink, RefreshCw, Copy, Check,
-  Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings,
-  X, Upload,
+  Server, Brain, Image as ImageIcon, Loader2, Sparkles, Settings
 } from 'lucide-react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
-import Link from 'next/link';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -69,7 +67,6 @@ function VaultContent() {
   const [newLabel, setNewLabel]       = useState('');
   const [copiedId, setCopiedId]       = useState<string | null>(null);
   const [testingId, setTestingId]     = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, { valid: boolean; message: string }>>({});
   
   const [activeCompanyId, setActiveCompanyId] = useState('default');
 
@@ -118,8 +115,10 @@ function VaultContent() {
   }, [showToast]);
 
   useEffect(() => {
-    setActiveCompanyId(localStorage.getItem('ai_marketing_active_company_id') || 'default');
-    setTimeout(() => loadInitialData(), 0);
+    setTimeout(() => {
+      setActiveCompanyId(localStorage.getItem('ai_marketing_active_company_id') || 'default');
+      loadInitialData();
+    }, 0);
     window.addEventListener('brand-updated', loadInitialData);
     return () => window.removeEventListener('brand-updated', loadInitialData);
   }, [loadInitialData]);
@@ -165,7 +164,7 @@ function VaultContent() {
         linkedin_state_mismatch:'LinkedIn: security check failed. Please try again.',
         linkedin_token_failed:  'LinkedIn token exchange failed. Check your App credentials.',
       };
-      showToast(messages[error] ?? `Connection error: ${error}`, 'error');
+      setTimeout(() => showToast(messages[error] ?? `Connection error: ${error}`, 'error'), 0);
       window.history.replaceState({}, '', '/vault');
     }
   }, [searchParams, showToast, loadInitialData]);
@@ -268,7 +267,6 @@ function VaultContent() {
 
   const handleTest = async (keyEntry: ApiKey) => {
     setTestingId(keyEntry.id);
-    setTestResults(prev => ({ ...prev, [keyEntry.id]: { valid: false, message: '' } }));
     try {
       const res  = await fetch('/api/keys/test', {
         method:  'POST',
@@ -276,11 +274,10 @@ function VaultContent() {
         body:    JSON.stringify({ provider: keyEntry.provider, key: keyEntry.key }),
       });
       const data = (await res.json()) as { valid: boolean; message: string };
-      setTestResults(prev => ({ ...prev, [keyEntry.id]: data }));
       // Update the key's status based on test result
       const newStatus = data.valid ? 'active' : 'invalid';
       const updatedKeys = apiKeys.map(k =>
-        k.id === keyEntry.id ? { ...k, status: newStatus as any } : k
+        k.id === keyEntry.id ? { ...k, status: newStatus as 'active' | 'invalid' } : k
       );
       setApiKeys(updatedKeys);
       await saveKeysToApi(updatedKeys);

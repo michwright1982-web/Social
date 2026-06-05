@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const keys = JSON.parse(await decryptToken(rawCookie));
-    const openaiKey = keys.find((k: any) => k.provider === 'OpenAI' && k.status === 'active')?.key || keys.find((k: any) => k.provider === 'OpenAI')?.key;
+    const openaiKey = keys.find((k: { provider: string; status?: string; key: string }) => k.provider === 'OpenAI' && k.status === 'active')?.key || keys.find((k: { provider: string; key: string }) => k.provider === 'OpenAI')?.key;
     
     if (!openaiKey) {
       return NextResponse.json({ error: 'An active OpenAI API key is required to analyze styles.' }, { status: 401 });
@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
     styleData.sampleImage = image;
 
     return NextResponse.json(styleData);
-  } catch (error: any) {
+  } catch (error) {
     console.error('[generate-style] Error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to generate style' }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message || 'Failed to generate style' }, { status: 500 });
   }
 }

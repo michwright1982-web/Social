@@ -36,8 +36,8 @@ export default function SignupPage() {
       localStorage.setItem('ai_marketing_active_company_id', 'default');
 
       window.location.href = '/setup-guide';
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
     } finally {
       setIsLoading(false);
     }

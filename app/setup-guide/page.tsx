@@ -2,18 +2,17 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import {
   ExternalLink,
-  ChevronRight,
   Shield,
   CheckCircle2,
   Lock,
   ArrowRight
 } from 'lucide-react';
-import { FacebookIcon, InstagramIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
+import { FacebookIcon, LinkedinIcon, XSocialIcon } from '@/components/SocialIcons';
 import Link from 'next/link';
 import Image from 'next/image';
 
