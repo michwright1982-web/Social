@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
     
     const oldSecret = existingCreds[platform]?.clientSecret;
     mergedCreds[platform] = {
-      clientId: config.clientId,
+      clientId: config.clientId.trim(),
       // Use new secret if provided, otherwise keep old secret
-      clientSecret: config.clientSecret || oldSecret || '',
+      clientSecret: (config.clientSecret || oldSecret || '').trim(),
     };
   }
 
