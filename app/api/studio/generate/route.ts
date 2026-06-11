@@ -45,13 +45,13 @@ export async function POST(req: NextRequest) {
       const parsedBrand = decryptedBrand.startsWith('{') ? JSON.parse(decryptedBrand) : { context: decryptedBrand };
       const { context, font, color } = parsedBrand;
       if (context || font || color) {
-        brandRules = '\n\nBRAND GUIDELINES TO FOLLOW STRICTLY:\n';
-        if (context) brandRules += `- Brand Context: ${context}\n`;
+        brandRules = '\nBrand:';
+        if (context) brandRules += ` ${context}.`;
         if (color) {
           const colorStr = Array.isArray(color) ? color.join(', ') : color;
-          brandRules += `- Brand Colors: incorporate the color(s) ${colorStr} beautifully into the scene or lighting.\n`;
+          brandRules += ` Colors: ${colorStr}.`;
         }
-        if (font) brandRules += `- Typography Style: if any text or structural layout is implied, evoke the geometric and structural feel of the ${font} font family.\n`;
+        if (font) brandRules += ` Font: ${font}.`;
       }
     } catch (error) {
       console.warn('Failed to parse brand context for generation', error);
@@ -80,11 +80,11 @@ export async function POST(req: NextRequest) {
   providerKey = foundKey;
 
   // Text safe-zone rule: all text/typography must be inset at least 20px from every edge
-  const textSafeZoneRule = '\n\nTEXT PLACEMENT RULE (MANDATORY): Any and all text, headlines, captions, labels, or typographic elements that appear in the image MUST be placed with a minimum inset/padding of 20 pixels from every edge of the image (top, bottom, left, and right). No text may touch or bleed beyond the 20px safe zone border on any side.';
+  const textSafeZoneRule = ' All text must be inset 20px from edges.';
 
   const enhancedPrompt = styleRules 
-    ? `${prompt}. Strict Style Rules to follow:\n${styleRules}\nMaintain high quality, highly detailed composition.${brandRules}${textSafeZoneRule}`
-    : `${prompt}, style: ${style}, high quality, detailed.${brandRules}${textSafeZoneRule}`;
+    ? `${prompt}. Style: ${styleRules}. HQ.${brandRules}${textSafeZoneRule}`
+    : `${prompt}, style: ${style}, HQ.${brandRules}${textSafeZoneRule}`;
 
   try {
     if (provider === 'Google AI Studio') {

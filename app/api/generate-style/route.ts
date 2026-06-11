@@ -36,18 +36,18 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert art director and AI prompt engineer. Analyze the given image and extract its core visual style into a structured format.'
+            content: 'Extract visual style.'
           },
           {
             role: 'user',
             content: [
               { 
                 type: 'text', 
-                text: 'Analyze this image and create a reusable style preset for an AI image generator. Output JSON with these exact fields: "id" (a unique snake_case string), "name" (catchy, descriptive name), "description" (short 1-2 sentence summary), "rules" (bulleted list of strict visual rules covering color, lighting, texture, and composition).' 
+                text: 'Output JSON: "id" (snake_case), "name", "description", "rules" (array of strings).' 
               },
               { 
                 type: 'image_url', 
-                image_url: { url: image } 
+                image_url: { url: image, detail: 'low' } 
               }
             ]
           }

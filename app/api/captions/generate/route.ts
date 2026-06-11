@@ -58,22 +58,16 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: `You are an expert social media manager. You will be provided with an image. Write 4 distinct, highly engaging social media captions optimized for the provided image.
-${brandContext ? `\nCRITICAL BRAND GUIDELINES:\n${brandContext}\nEnsure all captions strictly follow this brand context, tone, and product description.\n` : ''}
-Return ONLY a valid JSON object matching this exact format:
-{
-  "facebook": "...",
-  "instagram": "...",
-  "x": "...",
-  "linkedin": "..."
-}
-Keep X (Twitter) under 280 chars. Use emojis and relevant hashtags.`
+            content: `Write 4 engaging captions for the image.
+${brandContext ? `Brand: ${brandContext}\n` : ''}Return JSON:
+{"facebook":"","instagram":"","x":"","linkedin":""}
+X<280 chars. Add emojis & tags.`
           },
           {
             role: 'user',
             content: [
               { type: 'text', text: 'Generate the captions for this image.' },
-              { type: 'image_url', image_url: { url: imageUrl } }
+              { type: 'image_url', image_url: { url: imageUrl, detail: 'low' } }
             ]
           }
         ],
